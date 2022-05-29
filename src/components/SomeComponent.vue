@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
-import { AppState } from './type';
+import { AppState, Shape } from './type';
 
 const { appState }  = defineProps<{ appState: AppState }>()
 
@@ -9,16 +9,25 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const FATOR = 1
 const BORDER_WIDTH = 1
 
+interface Element {
+  x: number
+  y: number
+
+  shape: Shape
+}
+
 interface Point {
   x: number
   y: number
 }
 
-interface Rect {
-  x: number
-  y: number
+interface Rect extends Element {
   width: number
   height: number
+}
+
+interface Circle extends Element {
+  radius: number
 }
 
 function getMousePos(evt: MouseEvent) {
@@ -28,11 +37,26 @@ function getMousePos(evt: MouseEvent) {
   }
 }
 
-function drawLine(ctx: CanvasRenderingContext2D, point1: Point, point2: Point) {
+function drawLine(ctx: CanvasRenderingContext2D, start: Point, end: Point) {
   ctx.beginPath()
-  ctx.moveTo(point1.x, point1.y)
-  ctx.lineTo(point2.x, point2.y)
+  ctx.moveTo(start.x, start.y)
+  ctx.lineTo(end.x, end.y)
   ctx.stroke()
+}
+
+function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
+  switch (element.shape) {
+    case 'rectangle':
+      drawRect(ctx, element as Rect)
+      break
+
+    case 'circle':
+      drawCircle(ctx, element as Circle)
+      break
+
+    default:
+      break
+  }
 }
 
 function drawRect(ctx: CanvasRenderingContext2D, rect: Rect) {
@@ -41,13 +65,38 @@ function drawRect(ctx: CanvasRenderingContext2D, rect: Rect) {
   ctx.stroke()
 }
 
+function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle) {
+  ctx.beginPath()
+  ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI)
+  ctx.stroke()
+}
+
 function setCursor(canvas: HTMLCanvasElement, cursor: string) {
   canvas.style.cursor = cursor
+}
+
+function pointerInElement(point: Point, element: Element) {
+  switch (appState.shape) {
+    case 'rectangle':
+      return pointerInRect(point, element as Rect)
+    
+    case 'circle':
+      return pointerInCircle(point, element as Circle)
+
+    default:
+      return false
+  }
 }
 
 function pointerInRect(point: Point, rect: Rect) {
   return point.x >= rect.x && point.x <= rect.x + rect.width &&
     point.y >= rect.y && point.y <= rect.y + rect.height
+}
+
+function pointerInCircle(point: Point, circle: Circle) {
+  const dx = point.x - circle.x
+  const dy = point.y - circle.y
+  return dx * dx + dy * dy <= circle.radius * circle.radius
 }
 
 onMounted(() => {
@@ -69,13 +118,13 @@ onMounted(() => {
 
   ctx.lineWidth = BORDER_WIDTH
 
-  let currentElement: Rect | null = null
+  let currentElement: Element | null = null
 
-  let elements: Rect[] = []
+  let elements: Element[] = []
 
   function draw(ctx: CanvasRenderingContext2D) {
     elements.forEach(
-      element => drawRect(ctx, element)
+      element => drawElement(ctx, element)
     )
   }
 
@@ -89,7 +138,7 @@ onMounted(() => {
     mouseDownPoint = getMousePos(event)
 
     const element = elements.find(
-      element => pointerInRect(mouseDownPoint, element)
+      element => pointerInElement(mouseDownPoint, element)
     )
 
     if (element) {
@@ -109,8 +158,9 @@ onMounted(() => {
   const handleMouseMove = (event: MouseEvent) => {
     mouseMovePoint = getMousePos(event)
 
+    // TODO: get hover element
     const hasElement = elements.some(
-      element => pointerInRect(mouseMovePoint, element)
+      element => pointerInElement(mouseMovePoint, element)
     )
 
     if (hasElement) {
@@ -133,20 +183,38 @@ onMounted(() => {
     hasMouseDown = false
 
 
-    if (currentElement && pointerInRect(mouseUpPoint, currentElement)) {
+    if (currentElement && pointerInElement(mouseUpPoint, currentElement)) {
       currentElement = null
 
       appState.cursor.operation = 'move'
 
     } else {
-      const rect: Rect = {
-        x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
-        y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
-        width: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
-        height: Math.abs(mouseDownPoint.y - mouseUpPoint.y)
-      }
+      switch (appState.shape) {
+        case 'rectangle':
+          const rect: Rect = {
+            x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
+            y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
+            width: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
+            height: Math.abs(mouseDownPoint.y - mouseUpPoint.y),
+            shape: 'rectangle'
+          }
 
-      elements.push(rect)
+          elements.push(rect)
+          break
+
+        case 'circle':
+          const circle: Circle = {
+            x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
+            y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
+            radius: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
+            shape: 'circle'
+          }
+
+          elements.push(circle)
+          break
+        default:
+          break
+      }
       
       appState.cursor.operation = 'create'
     }

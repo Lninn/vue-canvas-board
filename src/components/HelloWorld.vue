@@ -3,12 +3,13 @@ import SomeComponent from './SomeComponent.vue'
 import CanvasStatus from './CanvasStatus.vue'
 
 import { AppState } from './type'
-import { ref } from 'vue';
+import { reactive } from 'vue';
 
-const appState = ref<AppState>({
+const appState = reactive<AppState>({
   cursor: {
     operation: 'create',
   },
+  shape: 'circle',
 })
 </script>
 
