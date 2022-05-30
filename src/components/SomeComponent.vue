@@ -76,7 +76,7 @@ function setCursor(canvas: HTMLCanvasElement, cursor: string) {
 }
 
 function pointerInElement(point: Point, element: Element) {
-  switch (appState.shape) {
+  switch (element.shape) {
     case 'rectangle':
       return pointerInRect(point, element as Rect)
     
@@ -158,16 +158,7 @@ onMounted(() => {
   const handleMouseMove = (event: MouseEvent) => {
     mouseMovePoint = getMousePos(event)
 
-    // TODO: get hover element
-    const hasElement = elements.some(
-      element => pointerInElement(mouseMovePoint, element)
-    )
-
-    if (hasElement) {
-      setCursor(canvas, 'move')
-    } else {
-      setCursor(canvas, 'default')
-    }
+    handleCursor(mouseMovePoint)
 
     if (hasMouseDown && currentElement) {
       const deltaX = mouseMovePoint.x - mouseDownPoint.x
@@ -223,6 +214,18 @@ onMounted(() => {
   canvas.addEventListener('mousedown', handleMouseDown)
   canvas.addEventListener('mousemove', handleMouseMove)
   canvas.addEventListener('mouseup', handleMouseUp)
+
+  const handleCursor = (movePoint: Point) => {
+    const hasFocus = elements.some(
+      element => pointerInElement(movePoint, element)
+    )
+
+    if (hasFocus) {
+      setCursor(canvas, 'move')
+    } else {
+      setCursor(canvas, 'default')
+    }
+  }
 
   setInterval(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
