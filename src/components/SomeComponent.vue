@@ -99,6 +99,36 @@ function pointerInCircle(point: Point, circle: Circle) {
   return dx * dx + dy * dy <= circle.radius * circle.radius
 }
 
+const createShape = (
+  mouseDownPoint: Point,
+  mouseUpPoint: Point,
+) => {
+  switch (appState.shape) {
+    case 'rectangle':
+      const rect: Rect = {
+        x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
+        y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
+        width: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
+        height: Math.abs(mouseDownPoint.y - mouseUpPoint.y),
+        shape: 'rectangle'
+      }
+
+      return rect
+
+    case 'circle':
+      const circle: Circle = {
+        x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
+        y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
+        radius: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
+        shape: 'circle'
+      }
+
+      return circle
+    default:
+      break
+  }
+}
+
 onMounted(() => {
   const canvas = canvasRef.value
   if (!canvas) {
@@ -173,38 +203,15 @@ onMounted(() => {
     mouseUpPoint = getMousePos(event)
     hasMouseDown = false
 
-
     if (currentElement && pointerInElement(mouseUpPoint, currentElement)) {
       currentElement = null
 
       appState.cursor.operation = 'move'
-
     } else {
-      switch (appState.shape) {
-        case 'rectangle':
-          const rect: Rect = {
-            x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
-            y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
-            width: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
-            height: Math.abs(mouseDownPoint.y - mouseUpPoint.y),
-            shape: 'rectangle'
-          }
+      const element = createShape(mouseDownPoint, mouseUpPoint)
 
-          elements.push(rect)
-          break
-
-        case 'circle':
-          const circle: Circle = {
-            x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
-            y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
-            radius: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
-            shape: 'circle'
-          }
-
-          elements.push(circle)
-          break
-        default:
-          break
+      if (element) {
+        elements.push(element)
       }
       
       appState.cursor.operation = 'create'
