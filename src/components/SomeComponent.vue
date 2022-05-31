@@ -30,6 +30,14 @@ interface Circle extends Element {
   radius: number
 }
 
+// get length from two point
+const getLength = (p1: Point, p2: Point) => {
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+
+  return Math.sqrt(dx * dx + dy * dy)
+}
+
 function getMousePos(evt: MouseEvent) {
   return {
     x: evt.clientX * FATOR,
@@ -100,16 +108,16 @@ function pointerInCircle(point: Point, circle: Circle) {
 }
 
 const createShape = (
-  mouseDownPoint: Point,
-  mouseUpPoint: Point,
+  startPoint: Point,
+  endPoint: Point,
 ) => {
   switch (appState.shape) {
     case 'rectangle':
       const rect: Rect = {
-        x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
-        y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
-        width: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
-        height: Math.abs(mouseDownPoint.y - mouseUpPoint.y),
+        x: Math.min(startPoint.x, endPoint.x),
+        y: Math.min(startPoint.y, endPoint.y),
+        width: Math.abs(startPoint.x - endPoint.x),
+        height: Math.abs(startPoint.y - endPoint.y),
         shape: 'rectangle'
       }
 
@@ -117,9 +125,9 @@ const createShape = (
 
     case 'circle':
       const circle: Circle = {
-        x: Math.min(mouseDownPoint.x, mouseUpPoint.x),
-        y: Math.min(mouseDownPoint.y, mouseUpPoint.y),
-        radius: Math.abs(mouseDownPoint.x - mouseUpPoint.x),
+        x: startPoint.x,
+        y: startPoint.y,
+        radius: getLength(startPoint, endPoint),
         shape: 'circle'
       }
 
@@ -156,6 +164,10 @@ onMounted(() => {
     elements.forEach(
       element => drawElement(ctx, element)
     )
+
+    if (currentElement && mode === 'draw') {
+      drawElement(ctx, currentElement)
+    }
   }
 
   let hasMouseDown = false
@@ -164,63 +176,24 @@ onMounted(() => {
   let mouseMovePoint: Point = { x: 0, y: 0 }
   let mouseUpPoint: Point = { x: 0, y: 0 }
 
-  const handleMouseDown = (event: MouseEvent) => {
-    mouseDownPoint = getMousePos(event)
+  let mode = 'none'
 
-    const element = elements.find(
-      element => pointerInElement(mouseDownPoint, element)
-    )
-
-    if (element) {
-      currentElement = element
-    } else {
-      currentElement = null
-    }
-
-    if (currentElement) {
-      mouseDownPoint.x -= currentElement.x
-      mouseDownPoint.y -= currentElement.y
-
-      hasMouseDown = true
-    }
-  }
-
-  const handleMouseMove = (event: MouseEvent) => {
-    mouseMovePoint = getMousePos(event)
-
+  function update() {
     handleCursor(mouseMovePoint)
 
-    if (hasMouseDown && currentElement) {
+    if (mode === 'move' && hasMouseDown) {
       const deltaX = mouseMovePoint.x - mouseDownPoint.x
       const deltaY = mouseMovePoint.y - mouseDownPoint.y
 
-      currentElement.x = deltaX
+     if (currentElement) {
+       currentElement.x = deltaX
       currentElement.y = deltaY
+     }
+        
+    } else if (mode === 'draw') {
+      currentElement = createShape(mouseDownPoint, mouseMovePoint) as Element
     }
   }
-
-  const handleMouseUp = (event: MouseEvent) => {
-    mouseUpPoint = getMousePos(event)
-    hasMouseDown = false
-
-    if (currentElement && pointerInElement(mouseUpPoint, currentElement)) {
-      currentElement = null
-
-      appState.cursor.operation = 'move'
-    } else {
-      const element = createShape(mouseDownPoint, mouseUpPoint)
-
-      if (element) {
-        elements.push(element)
-      }
-      
-      appState.cursor.operation = 'create'
-    }
-  }
-
-  canvas.addEventListener('mousedown', handleMouseDown)
-  canvas.addEventListener('mousemove', handleMouseMove)
-  canvas.addEventListener('mouseup', handleMouseUp)
 
   const handleCursor = (movePoint: Point) => {
     const hasFocus = elements.some(
@@ -234,8 +207,51 @@ onMounted(() => {
     }
   }
 
+  const handleMouseDown = (event: MouseEvent) => {
+    mouseDownPoint = getMousePos(event)
+    hasMouseDown = true
+
+    const element = elements.find(
+      element => pointerInElement(mouseDownPoint, element)
+    )
+
+    if (element) {
+      currentElement = element
+
+      mouseDownPoint.x -= element.x
+      mouseDownPoint.y -= element.y
+      mode = 'move'
+    } else {
+      currentElement = createShape(mouseDownPoint, mouseUpPoint) as Element
+      mode = 'draw'
+    }
+  }
+
+  const handleMouseMove = (event: MouseEvent) => {
+    mouseMovePoint = getMousePos(event)
+  }
+
+  const handleMouseUp = (event: MouseEvent) => {
+    mouseUpPoint = getMousePos(event)
+    hasMouseDown = false
+
+    if (mode === 'move') {
+      // do nothing
+    } else if (mode === 'draw') {
+      elements.push(currentElement as Element)
+      currentElement = null
+      mode = 'none'
+    }
+  }
+
+  canvas.addEventListener('mousedown', handleMouseDown)
+  canvas.addEventListener('mousemove', handleMouseMove)
+  canvas.addEventListener('mouseup', handleMouseUp)
+
   setInterval(() => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    update()
 
     draw(ctx)
   }, 0)
