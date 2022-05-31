@@ -55,7 +55,7 @@ function drawLine(ctx: CanvasRenderingContext2D, start: Point, end: Point) {
 function drawElement(ctx: CanvasRenderingContext2D, element: Element, isFocus?: boolean) {
   switch (element.shape) {
     case 'rectangle':
-      drawRect(ctx, element as Rect)
+      drawRect(ctx, element as Rect, isFocus)
       break
 
     case 'circle':
@@ -67,10 +67,22 @@ function drawElement(ctx: CanvasRenderingContext2D, element: Element, isFocus?: 
   }
 }
 
-function drawRect(ctx: CanvasRenderingContext2D, rect: Rect) {
+
+const PADDING = 10
+
+function drawRect(ctx: CanvasRenderingContext2D, rect: Rect, isFocus?: boolean) {
   ctx.beginPath()
   ctx.rect(rect.x, rect.y, rect.width, rect.height)
   ctx.stroke()
+
+  if (isFocus) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.setLineDash([6])
+    ctx.rect(rect.x - PADDING, rect.y - PADDING, rect.width + PADDING * 2, rect.height + PADDING * 2)
+    ctx.stroke()
+    ctx.restore()
+  }
 }
 
 function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle, isFocus?: boolean) {
@@ -79,9 +91,12 @@ function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle, isFocus?: boo
   ctx.stroke()
 
   if (isFocus) {
+    ctx.save()
     ctx.beginPath()
-    ctx.rect(circle.x - circle.radius, circle.y - circle.radius, circle.radius * 2, circle.radius * 2)
+    ctx.setLineDash([6])
+    ctx.rect(circle.x - circle.radius - PADDING, circle.y - circle.radius - PADDING, circle.radius * 2 + PADDING * 2, circle.radius * 2 + PADDING * 2)
     ctx.stroke()
+    ctx.restore()
   }
 }
 
