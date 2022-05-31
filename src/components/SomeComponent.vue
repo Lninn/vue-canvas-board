@@ -52,14 +52,14 @@ function drawLine(ctx: CanvasRenderingContext2D, start: Point, end: Point) {
   ctx.stroke()
 }
 
-function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
+function drawElement(ctx: CanvasRenderingContext2D, element: Element, isFocus?: boolean) {
   switch (element.shape) {
     case 'rectangle':
       drawRect(ctx, element as Rect)
       break
 
     case 'circle':
-      drawCircle(ctx, element as Circle)
+      drawCircle(ctx, element as Circle, isFocus)
       break
 
     default:
@@ -73,10 +73,16 @@ function drawRect(ctx: CanvasRenderingContext2D, rect: Rect) {
   ctx.stroke()
 }
 
-function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle) {
+function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle, isFocus?: boolean) {
   ctx.beginPath()
   ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI)
   ctx.stroke()
+
+  if (isFocus) {
+    ctx.beginPath()
+    ctx.rect(circle.x - circle.radius, circle.y - circle.radius, circle.radius * 2, circle.radius * 2)
+    ctx.stroke()
+  }
 }
 
 function setCursor(canvas: HTMLCanvasElement, cursor: string) {
@@ -162,7 +168,9 @@ onMounted(() => {
 
   function draw(ctx: CanvasRenderingContext2D) {
     elements.forEach(
-      element => drawElement(ctx, element)
+      element => {
+        drawElement(ctx, element, element === currentElement)
+      }
     )
 
     if (currentElement && mode === 'draw') {
@@ -179,6 +187,7 @@ onMounted(() => {
   let mode = 'none'
 
   function update() {
+    // TODO 通过严格的工作模式来指导 JavaScript 的行为
     handleCursor(mouseMovePoint)
 
     if (mode === 'move' && hasMouseDown) {
@@ -187,7 +196,7 @@ onMounted(() => {
 
      if (currentElement) {
        currentElement.x = deltaX
-      currentElement.y = deltaY
+       currentElement.y = deltaY
      }
         
     } else if (mode === 'draw') {
