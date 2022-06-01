@@ -81,8 +81,44 @@ function drawRect(ctx: CanvasRenderingContext2D, rect: Rect, isFocus?: boolean) 
     ctx.setLineDash([6])
     ctx.rect(rect.x - PADDING, rect.y - PADDING, rect.width + PADDING * 2, rect.height + PADDING * 2)
     ctx.stroke()
+
+    drawResizeRect(ctx, rect)
+
     ctx.restore()
   }
+}
+
+function getCornerPointsFromElement(element: Element) {
+  switch (element.shape) {
+    case 'rectangle':
+      return getCornerPointsFromRect(element as Rect)
+
+    case 'circle':
+      return getCornerPointsFromCircle(element as Circle)
+
+    default:
+      return []
+  }
+}
+
+function getCornerPointsFromRect(rect: Rect) {
+  return [
+    { x: rect.x, y: rect.y },
+    { x: rect.x + rect.width, y: rect.y },
+    { x: rect.x + rect.width, y: rect.y + rect.height },
+    { x: rect.x, y: rect.y + rect.height },
+  ]
+}
+
+function getCornerPointsFromCircle(circle: Circle) {
+  const { x, y, radius } = circle
+
+  return [
+    { x: x - radius, y: y - radius },
+    { x: x + radius, y: y - radius },
+    { x: x + radius, y: y + radius },
+    { x: x - radius, y: y + radius },
+  ]
 }
 
 function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle, isFocus?: boolean) {
@@ -96,7 +132,82 @@ function drawCircle(ctx: CanvasRenderingContext2D, circle: Circle, isFocus?: boo
     ctx.setLineDash([6])
     ctx.rect(circle.x - circle.radius - PADDING, circle.y - circle.radius - PADDING, circle.radius * 2 + PADDING * 2, circle.radius * 2 + PADDING * 2)
     ctx.stroke()
+
+    drawResizeRect(ctx, circle)
+
     ctx.restore()
+  }
+}
+
+type ResizePosition = 'TopLeftCorner' | 'TopRightCorner' | 'BottomLeftCorner' | 'BottomRightCorner' | 'TopCenter' | 'BottomCenter' | 'LeftCenter' | 'RightCenter'
+
+// draw resize rect
+function drawResizeRect(ctx: CanvasRenderingContext2D, element: Element) {
+  const pointsOfElement = getCornerPointsFromElement(element) as Point[]
+  const [top, right, bottom, left] = pointsOfElement;
+
+  const resizeRectMap: Record<ResizePosition, Rect> = {
+    TopLeftCorner: {
+      x: top.x - PADDING * 3,
+      y: top.y - PADDING * 3,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    TopRightCorner: {
+      x: right.x + PADDING,
+      y: top.y - PADDING * 3,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    BottomLeftCorner: {
+      x: left.x - PADDING * 3,
+      y: bottom.y + PADDING,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    BottomRightCorner: {
+      x: right.x + PADDING,
+      y: bottom.y + PADDING,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    TopCenter: {
+      x: (left.x + right.x) / 2 - PADDING,
+      y: top.y - PADDING * 3,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    BottomCenter: {
+      x: (left.x + right.x) / 2 - PADDING,
+      y: bottom.y + PADDING,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    LeftCenter: {
+      x: left.x - PADDING * 3,
+      y: (top.y + bottom.y) / 2 - PADDING,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+    RightCenter: {
+      x: right.x + PADDING,
+      y: (top.y + bottom.y) / 2 - PADDING * 3,
+      width: PADDING * 2,
+      height: PADDING * 2,
+      shape: 'rectangle',
+    },
+  }
+
+  for (const key in resizeRectMap) {
+    const rect = resizeRectMap[key as ResizePosition]
+    drawRect(ctx, rect, false)
   }
 }
 
