@@ -10,6 +10,7 @@ const appState = reactive<AppState>({
     operation: 'create',
   },
   shape: 'circle',
+  activeToll: 'rectangle'
 })
 </script>
 
@@ -17,7 +18,7 @@ const appState = reactive<AppState>({
   <div class="wrap">
     <SomeComponent :appState="appState" />
 
-    <CanvasStatus :appState="appState" />
+    <CanvasStatus />
   </div>
 </template>
 
