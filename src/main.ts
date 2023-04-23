@@ -1,3 +1,1 @@
-import { main } from './tetris'
-
-main()
+console.log('hello world');
