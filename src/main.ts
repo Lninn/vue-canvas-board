@@ -46,7 +46,7 @@ function  main() {
   const center = get_canvas_center(canvas)
 
   const c1 = new Circle({ x: center.x, y: center.y, r: 100 })
-  const r1 = new Rectangle({ x: 100, y: 100, w: 400, h: 100 })
+  const r1 = new Rectangle({ x: 100, y: 100, w: 100, h: 100 })
 
   const elements: Element[] = [c1, r1]
 

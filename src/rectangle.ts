@@ -1,3 +1,4 @@
+import { BORDER_RECT_SIZE } from "./constant"
 import { draw_points, with_padding } from "./shared"
 import { I2DCtx, PointProps, Shape } from "./type"
 
@@ -6,6 +7,26 @@ interface RectangleProps {
   y: number
   w: number
   h: number
+}
+
+const with_border_rect = (point: PointProps) => {
+  const size = BORDER_RECT_SIZE
+
+  const ps: PointProps[] = [
+    { x: -size, y: -size },
+    { x: size, y: -size },
+    { x: size, y: size },
+    { x: -size, y: size },
+  ]
+
+  return ps.map(p => {
+    const np: PointProps = {
+      x: p.x + point.x,
+      y: p.y + point.y,
+    }
+
+    return np
+  })
 }
 
 export class Rectangle implements Shape {
@@ -26,7 +47,14 @@ export class Rectangle implements Shape {
       { x: x, y: y + h },
     ]
 
-    draw_points(ctx, with_padding(outerPoints))
+    const paddingPoints = with_padding(outerPoints)
+    draw_points(ctx, paddingPoints)
+
+    for (const point of paddingPoints) {
+      const rectPoints = with_border_rect(point)
+      draw_points(ctx, rectPoints)
+    }
+
   }
 
   hasInteracion(p: PointProps) {
