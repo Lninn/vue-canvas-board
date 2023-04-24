@@ -1,6 +1,8 @@
 import './style.css'
 
 
+const BORDER_PADDING = 10
+
 type I2DCtx = CanvasRenderingContext2D
 
 const get_by_id = <T = HTMLElement, >(id: string) => {
@@ -47,9 +49,9 @@ const get_canvas_center = (el: HTMLCanvasElement): PointProps => {
 const draw_points = (ctx: I2DCtx,points: PointProps[]) => {
   const [start, ...restPoints] = points
 
-  ctx.strokeStyle = '#1772b4'
-  // ctx.lineWidth = 10
-  ctx.setLineDash([12, 3, 3])
+  ctx.strokeStyle = '#ee3f4d'
+  ctx.lineWidth = 1
+  // ctx.setLineDash([12, 3, 3])
 
   ctx.beginPath()
   ctx.moveTo(start.x, start.y)
@@ -58,6 +60,25 @@ const draw_points = (ctx: I2DCtx,points: PointProps[]) => {
   ctx.closePath()
 
   ctx.stroke()
+}
+
+const with_padding = (points: PointProps[]) => {
+  const p = BORDER_PADDING
+
+  const appendPaddingPoints: PointProps[] = [
+    { x: -p, y: -p },
+    { x: +p, y: -p },
+    { x: p, y: p },
+    { x: -p, y: p },
+  ]
+
+  return points.map((p, i) => {
+    const { x, y } = p
+
+    const ap = appendPaddingPoints[i]
+
+    return { x: x + ap.x, y: y + ap.y }
+  })
 }
 
 interface PointProps {
@@ -95,14 +116,15 @@ class Rectangle implements Shape {
 
   renderBorder(ctx: CanvasRenderingContext2D) {
     const { x, y, w, h } = this.props
+
     const outerPoints: PointProps[] = [
-      { x, y },
-      { x: x + w, y },
+      { x: x, y: y },
+      { x: x + w, y: y },
       { x: x + w, y: y + h },
       { x: x, y: y + h },
     ]
 
-    draw_points(ctx, outerPoints)
+    draw_points(ctx, with_padding(outerPoints))
   }
 
   hasInteracion(p: PointProps) {
@@ -174,7 +196,7 @@ class Circle implements Shape {
       { x: x - r, y: y + r },
     ]
 
-    draw_points(ctx, outerPoints)
+    draw_points(ctx, with_padding(outerPoints))
     draw_points(ctx, innerPoints)
 
   }
@@ -186,7 +208,7 @@ class Circle implements Shape {
       r,
     } = this.props
 
-    ctx.fillStyle = '#f07c82'
+    ctx.fillStyle = '#5698c3'
 
     ctx.beginPath()
     ctx.arc(x, y, r, Math.PI * 2, 0, false)
