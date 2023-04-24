@@ -48,14 +48,14 @@ const draw_points = (ctx: I2DCtx,points: PointProps[]) => {
   const [start, ...restPoints] = points
 
   ctx.strokeStyle = '#1772b4'
+  // ctx.lineWidth = 10
+  ctx.setLineDash([12, 3, 3])
 
   ctx.beginPath()
   ctx.moveTo(start.x, start.y)
   restPoints.forEach(p => { ctx.lineTo(p.x, p.y) })
 
   ctx.closePath()
-
-  ctx.setLineDash([12, 3, 3])
 
   ctx.stroke()
 }
@@ -78,16 +78,31 @@ interface RectangleProps {
 }
 
 interface Shape {
+  hasFocus: boolean
   hasInteracion: (p: PointProps) => boolean
   update: (p: PointProps) => void
   draw: (ctx: I2DCtx) => void
+  renderBorder: (ctx: I2DCtx) => void
 }
 
 class Rectangle implements Shape {
   props: RectangleProps
+  hasFocus = false
 
   constructor(props: RectangleProps) {
     this.props = props
+  }
+
+  renderBorder(ctx: CanvasRenderingContext2D) {
+    const { x, y, w, h } = this.props
+    const outerPoints: PointProps[] = [
+      { x, y },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+      { x: x, y: y + h },
+    ]
+
+    draw_points(ctx, outerPoints)
   }
 
   hasInteracion(p: PointProps) {
@@ -103,7 +118,7 @@ class Rectangle implements Shape {
     this.props.y = p.y
   }
 
-  draw(ctx: I2DCtx) {
+  render(ctx: I2DCtx) {
     ctx.beginPath()
 
     const { x, y, w, h } = this.props
@@ -111,10 +126,19 @@ class Rectangle implements Shape {
     ctx.rect(x, y, w, h)
     ctx.fill()
   }
+
+  draw(ctx: I2DCtx) {
+    this.render(ctx)
+
+    if (this.hasFocus) {
+      this.renderBorder(ctx)
+    }
+  }
 }
 
 class Circle implements Shape {
   props: CircleProps
+  hasFocus = false
 
   constructor(props: CircleProps) {
     this.props = props
@@ -123,7 +147,7 @@ class Circle implements Shape {
   private getPoint(deg: number) {
     const { x, y, r } = this.props
 
-    const _r = r * 1.5
+    const _r = r
 
     const rad = to_rad(deg)
     const p: PointProps = {
@@ -134,16 +158,24 @@ class Circle implements Shape {
     return p
   }
 
-  private renderBorder(ctx: I2DCtx) {
+  renderBorder(ctx: I2DCtx) {
 
     const p1 = this.getPoint(45)
     const p2 = this.getPoint(135)
     const p3 = this.getPoint(225)
     const p4 = this.getPoint(315)
+    const innerPoints = [p1, p2, p3, p4]
 
-    const points = [p1, p2, p3, p4]
+    const { x, y, r } = this.props
+    const outerPoints: PointProps[] = [
+      { x: x - r, y: y - r },
+      { x: x + r, y: y - r },
+      { x: x + r, y: y + r },
+      { x: x - r, y: y + r },
+    ]
 
-    draw_points(ctx, points)
+    draw_points(ctx, outerPoints)
+    draw_points(ctx, innerPoints)
 
   }
 
@@ -173,7 +205,9 @@ class Circle implements Shape {
 
   draw(ctx: I2DCtx) {
     this.render(ctx)
-    this.renderBorder(ctx)
+    if (this.hasFocus) {
+      this.renderBorder(ctx)
+    }
   }
 }
 
@@ -186,7 +220,7 @@ interface State {
   movePoint: PointProps | null
 }
 
-function main() {
+function  main() {
 
   const canvas = get_by_id<HTMLCanvasElement>('canvas')
   if (!canvas) return
@@ -218,18 +252,34 @@ function main() {
     movePoint: null,
   }
 
+  const resetElement = () => {
+    const prevElement = state.element
+    if (prevElement) {
+      prevElement.hasFocus = false
+    }
+  }
+
   window.addEventListener('mousedown', (e) => {
     const crtP: PointProps = { x: e.pageX, y: e.pageY }
 
     const element = find_element(elements, crtP)
-    if (!element) return
+    if (!element) {
+      resetElement()
+
+      return
+    }
 
     const offsetX = crtP.x - element.props.x
     const offsetY = crtP.y - element.props.y
 
     state.downPoint = { x: offsetX, y: offsetY }
+
+    resetElement()
+
     state.element = element
     state.hasDown = true
+
+    element.hasFocus = true
   })
   window.addEventListener('mousemove', (e) => {
     if (state.hasDown) {
