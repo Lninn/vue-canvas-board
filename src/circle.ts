@@ -1,5 +1,5 @@
-import { draw_points, get_length, to_rad, with_padding } from "./shared"
-import { I2DCtx, PointProps, Shape } from "./type"
+import { draw_points, get_length, to_rad, with_padding } from './shared'
+import { I2DCtx, PointProps } from './type'
 
 interface CircleProps {
   x: number
@@ -7,7 +7,7 @@ interface CircleProps {
   r: number
 }
 
-export class Circle implements Shape {
+export class Circle {
   props: CircleProps
   hasFocus = false
 
@@ -30,7 +30,6 @@ export class Circle implements Shape {
   }
 
   renderBorder(ctx: I2DCtx) {
-
     const p1 = this.getPoint(45)
     const p2 = this.getPoint(135)
     const p3 = this.getPoint(225)
@@ -47,7 +46,6 @@ export class Circle implements Shape {
 
     draw_points(ctx, with_padding(outerPoints))
     draw_points(ctx, innerPoints)
-
   }
 
   private render(ctx: I2DCtx) {
@@ -68,10 +66,6 @@ export class Circle implements Shape {
   onMove(p: PointProps) {
     this.props.x = p.x
     this.props.y = p.y
-  }
-
-  update() {
-
   }
 
   draw(ctx: I2DCtx) {

@@ -1,10 +1,9 @@
-
 import { Rectangle, RectangleProps } from './rectangle'
 import { draw_line, draw_rectangle } from './shared'
 import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
 const RECTANGLE_STYLE: CanvasApplyStyle = {
-  strokeStyle: '#f7a400'
+  strokeStyle: '#f7a400',
 }
 
 const enum Action {
@@ -19,7 +18,7 @@ export class HostPoint {
 
   private width: number
   private height: number
-  
+
   private center: PointProps
   private currentRectangleProps: RectangleProps | null
   private rectangleList: Rectangle[]
@@ -54,7 +53,7 @@ export class HostPoint {
 
       const offsetX = crtP.x - rectangle.props.x
       const offsetY = crtP.y - rectangle.props.y
-      
+
       this.action = Action.Move
       this.down_point = { x: offsetX, y: offsetY }
     } else {
@@ -80,8 +79,9 @@ export class HostPoint {
           const r = new Rectangle(props, RECTANGLE_STYLE)
           this.rectangleList.push(r)
         }
+        break
       case Action.Move:
-        //
+        break
     }
 
     this.has_down = false
@@ -157,17 +157,11 @@ export class HostPoint {
   }
 
   public update() {
-    const {
-      currentRectangle,
-      rectangleList,
-      down_point,
-      move_point,
-    } = this
-
-    switch(this.action) {
+    const { currentRectangle, rectangleList, down_point, move_point } = this
+    const nextProps = this.getCurrentRectangleProps()
+    switch (this.action) {
       case Action.Create:
-        const props = this.getCurrentRectangleProps()
-        this.currentRectangleProps = props
+        this.currentRectangleProps = nextProps
         break
       case Action.Move:
         if (currentRectangle && down_point && move_point) {
@@ -178,7 +172,6 @@ export class HostPoint {
     for (const rectangle of rectangleList) {
       rectangle.update()
     }
-   
   }
 
   public draw(ctx: I2DCtx) {

@@ -5,13 +5,12 @@ import { create_canvas } from './shared'
 import { PointProps } from './type'
 import { IS_MOBILE } from './constant'
 
-
 function main() {
   const payload = create_canvas()
   if (!payload) return
 
   const { canvas, ctx } = payload
-  
+
   const host = new HostPoint()
 
   const clear = () => {
@@ -90,4 +89,4 @@ const bind_event = (canvas: HTMLCanvasElement, host: HostPoint) => {
   }
 }
 
- main()
+main()

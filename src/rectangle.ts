@@ -1,6 +1,12 @@
-import { BORDER_PADDING, BORDER_RECT_SIZE } from "./constant"
-import { adjust_rectangle_props, draw_points, draw_rectangle, rectangle_intersection, with_padding } from "./shared"
-import { CanvasApplyStyle, I2DCtx, PointProps } from "./type"
+import { BORDER_PADDING, BORDER_RECT_SIZE } from './constant'
+import {
+  adjust_rectangle_props,
+  draw_points,
+  draw_rectangle,
+  rectangle_intersection,
+  with_padding,
+} from './shared'
+import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
 const enum Placement {
   TopLeft = 'TopLeft',
@@ -29,12 +35,7 @@ type BorderPlacementMap = Record<Placement, PointProps[]>
 const create_border_rects = (props: RectangleProps, cornerPoints: PointProps[]) => {
   const { x, y, w, h } = props
 
-  const [
-    p1,
-    p2,
-    p3,
-    p4,
-  ] = cornerPoints
+  const [p1, p2, p3, p4] = cornerPoints
 
   const c1: PointProps = { x: x + w / 2, y: y - BORDER_PADDING }
   const c2: PointProps = { x: x + w + BORDER_PADDING, y: y + h / 2 }
@@ -81,7 +82,7 @@ const with_border_rect = (point: PointProps) => {
     { x: -size, y: size },
   ]
 
-  return ps.map(p => {
+  return ps.map((p) => {
     const np: PointProps = {
       x: p.x + point.x,
       y: p.y + point.y,
@@ -127,10 +128,7 @@ export class Rectangle {
 
     const paddingPoints = with_padding(outerPoints)
 
-    const borderPlacement = create_border_rects(
-      adjust_rectangle_props(this.props),
-      paddingPoints
-    )
+    const borderPlacement = create_border_rects(adjust_rectangle_props(this.props), paddingPoints)
 
     return borderPlacement
   }
@@ -143,7 +141,6 @@ export class Rectangle {
     const entries = Object.entries(map)
 
     for (const borderItem of entries) {
-
       const [, points] = borderItem
 
       const [topLeftCornerPoint] = points
@@ -176,26 +173,23 @@ export class Rectangle {
     //   document.body.style.cursor = 'n-resize'
     //   return true
     // }
-   //
+    //
 
-    const intersectionInRect = rectangle_intersection(
-      adjust_rectangle_props(this.props),
-      p
-    )
+    const intersectionInRect = rectangle_intersection(adjust_rectangle_props(this.props), p)
 
     return intersectionInRect
   }
 
-  private resize(p: PointProps, downPoint: PointProps) {
+  private resize(p: PointProps) {
     const placement = this.activePlacement
 
     if (!placement) return
 
-    switch(placement) {
+    switch (placement) {
       case Placement.TopLeft:
       case Placement.LeftTop:
         break
-      
+
       case Placement.Top:
         //
         break

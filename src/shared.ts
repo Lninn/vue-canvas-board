@@ -1,6 +1,6 @@
-import { BORDER_PADDING } from "./constant"
-import { RectangleProps } from "./rectangle"
-import { CanvasApplyStyle, I2DCtx, PointProps } from "./type"
+import { BORDER_PADDING } from './constant'
+import { RectangleProps } from './rectangle'
+import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING
@@ -21,22 +21,20 @@ export const with_padding = (points: PointProps[]) => {
   })
 }
 
-export const draw_points = (
-  ctx: I2DCtx,
-  points: PointProps[],
-  style?: CanvasApplyStyle
-) => {
+export const draw_points = (ctx: I2DCtx, points: PointProps[], style?: CanvasApplyStyle) => {
   const [start, ...restPoints] = points
 
   ctx.beginPath()
   ctx.moveTo(start.x, start.y)
-  restPoints.forEach(p => { ctx.lineTo(p.x, p.y) })
+  restPoints.forEach((p) => {
+    ctx.lineTo(p.x, p.y)
+  })
   ctx.closePath()
 
   apply_canvas_style(ctx, style)
 }
 
-export const to_rad = (deg: number) => deg * Math.PI / 180
+export const to_rad = (deg: number) => (deg * Math.PI) / 180
 
 export const get_length = (s: PointProps, e: PointProps) => {
   const xP = Math.pow(s.x - e.x, 2)
@@ -45,7 +43,7 @@ export const get_length = (s: PointProps, e: PointProps) => {
   return Math.sqrt(xP + yP)
 }
 
-export const get_by_id = <T = HTMLElement, >(id: string) => {
+export const get_by_id = <T = HTMLElement>(id: string) => {
   const e = document.getElementById(id)
   if (e) {
     return e as T
@@ -55,10 +53,7 @@ export const get_by_id = <T = HTMLElement, >(id: string) => {
 }
 
 export const get_canvas_center = (el: HTMLCanvasElement): PointProps => {
-  const {
-    width,
-    height,
-  } = el
+  const { width, height } = el
 
   const p: PointProps = {
     x: width / 2,
@@ -79,7 +74,7 @@ export const rectangle_intersection = (rect: RectangleProps, p: PointProps) => {
 
 /**
  * @description p1 - p2
- * 
+ *
  */
 export const point_sub = (p1: PointProps, p2: PointProps) => {
   const p: PointProps = {
@@ -95,10 +90,7 @@ export const create_canvas = () => {
 
   if (!canvas) return null
 
-  const {
-    clientWidth,
-    clientHeight,
-  } = document.documentElement
+  const { clientWidth, clientHeight } = document.documentElement
 
   canvas.width = clientWidth
   canvas.height = clientHeight
@@ -150,11 +142,7 @@ export const apply_canvas_style = (ctx: I2DCtx, style?: CanvasApplyStyle) => {
   }
 }
 
-export const draw_rectangle = (
-  ctx: I2DCtx,
-  props: RectangleProps,
-  style?: CanvasApplyStyle
-) => {
+export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: CanvasApplyStyle) => {
   const { x, y, w, h } = props
   ctx.beginPath()
   ctx.rect(x, y, w, h)
