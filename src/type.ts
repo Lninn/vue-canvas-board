@@ -8,8 +8,10 @@ export interface PointProps {
 export interface Shape {
   hasFocus: boolean
   hasInteracion: (p: PointProps) => boolean
-  update: (p: PointProps) => void
+  onMove: (p: PointProps, downPoint: PointProps) => void
   draw: (ctx: I2DCtx) => void
   renderBorder: (ctx: I2DCtx) => void
+  update: () => void
 }
 
+export type CanvasApplyStyle = Partial<Pick<I2DCtx, 'strokeStyle' | 'fillStyle'>>

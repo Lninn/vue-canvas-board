@@ -65,9 +65,13 @@ export class Circle implements Shape {
     return get_length(this.props, p) <= this.props.r
   }
 
-  update(p: PointProps) {
+  onMove(p: PointProps) {
     this.props.x = p.x
     this.props.y = p.y
+  }
+
+  update() {
+
   }
 
   draw(ctx: I2DCtx) {

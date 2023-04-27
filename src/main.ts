@@ -1,129 +1,28 @@
 import './style.css'
 
-import { Circle } from './circle'
-import { Rectangle } from './rectangle'
-import { get_by_id, get_canvas_center } from './shared'
+import { HostPoint } from './host'
+import { create_canvas } from './shared'
 import { PointProps } from './type'
+import { IS_MOBILE } from './constant'
 
 
-type Element = Circle | Rectangle
+function main() {
+  const payload = create_canvas()
+  if (!payload) return
 
-const find_element = (elements: Element[], p: PointProps) => {
-  for (const e of elements) {
-    if (e.hasInteracion(p)) {
-      return e
-    }
-  }
-
-  return null
-}
-
-interface State {
-  element: Element | null,
-  hasDown: boolean
-  downPoint: PointProps | null
-  movePoint: PointProps | null
-}
-
-function  main() {
-
-  const canvas = get_by_id<HTMLCanvasElement>('canvas')
-  if (!canvas) return
-
-  const {
-    clientWidth,
-    clientHeight,
-  } = document.documentElement
-
-  canvas.width = clientWidth
-  canvas.height = clientHeight
-  canvas.style.width = clientWidth + 'px'
-  canvas.style.height = clientHeight + 'px'
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  const center = get_canvas_center(canvas)
-
-  const c1 = new Circle({ x: center.x, y: center.y, r: 100 })
-  const r1 = new Rectangle({ x: 100, y: 100, w: 100, h: 100 })
-
-  const elements: Element[] = [c1, r1]
-
-  const state: State = {
-    element: null,
-    hasDown: false,
-    downPoint: null,
-    movePoint: null,
-  }
-
-  const resetElement = () => {
-    const prevElement = state.element
-    if (prevElement) {
-      prevElement.hasFocus = false
-    }
-  }
-
-  window.addEventListener('mousedown', (e) => {
-    const crtP: PointProps = { x: e.pageX, y: e.pageY }
-
-    const element = find_element(elements, crtP)
-    if (!element) {
-      resetElement()
-
-      return
-    }
-
-    const offsetX = crtP.x - element.props.x
-    const offsetY = crtP.y - element.props.y
-
-    state.downPoint = { x: offsetX, y: offsetY }
-
-    resetElement()
-
-    state.element = element
-    state.hasDown = true
-
-    element.hasFocus = true
-  })
-  window.addEventListener('mousemove', (e) => {
-    if (state.hasDown) {
-      const crtP: PointProps = { x: e.pageX, y: e.pageY }
-      const _downPoint = state.downPoint as PointProps
-
-      const offsetX = crtP.x - _downPoint.x
-      const offsetY = crtP.y - _downPoint.y
-
-      state.movePoint = { x: offsetX, y: offsetY }
-    }
-  })
-  window.addEventListener('mouseup', () => {
-    state.hasDown = false
-
-    if (state.movePoint) {
-      state.downPoint = state.movePoint
-      state.movePoint = null
-    }
-  })
+  const { canvas, ctx } = payload
+  
+  const host = new HostPoint()
 
   const clear = () => {
     const { width, height } = canvas
     ctx.clearRect(0, 0, width, height)
   }
   const update = () => {
-
-    if (state.movePoint) {
-      const element = state.element
-
-      if (element) {
-        element.update(state.movePoint)
-      }
-    }
-
+    host.update()
   }
   const draw = () => {
-    c1.draw(ctx)
-    r1.draw(ctx)
+    host.draw(ctx)
   }
   const loop = () => {
     clear()
@@ -136,7 +35,59 @@ function  main() {
     requestAnimationFrame(loop)
   }
 
+  bind_event(canvas, host)
+
   start()
+}
+
+const to_mobile_point = (ev: TouchEvent) => {
+  const { pageX, pageY } = ev.touches[0]
+
+  const p: PointProps = { x: pageX, y: pageY }
+
+  return p
+}
+
+const to_pc_point = (ev: MouseEvent) => {
+  const p: PointProps = { x: ev.pageX, y: ev.pageY }
+
+  return p
+}
+
+const bind_event = (canvas: HTMLCanvasElement, host: HostPoint) => {
+  const handleMouseDown = (ev: MouseEvent) => {
+    const crtP = to_pc_point(ev)
+    host.onPointerDown(crtP)
+  }
+  const handleMouseMove = (ev: MouseEvent) => {
+    const crtP = to_pc_point(ev)
+    host.onMove(crtP)
+  }
+  const handleMouseUp = () => {
+    host.onUp()
+  }
+
+  const handleTouchStart = (ev: TouchEvent) => {
+    const point = to_mobile_point(ev)
+    host.onPointerDown(point)
+  }
+  const handleTouchMove = (ev: TouchEvent) => {
+    const point = to_mobile_point(ev)
+    host.onMove(point)
+  }
+  const handleTouchEnd = () => {
+    host.onUp()
+  }
+
+  if (IS_MOBILE) {
+    canvas.addEventListener('touchstart', handleTouchStart)
+    canvas.addEventListener('touchmove', handleTouchMove)
+    canvas.addEventListener('touchend', handleTouchEnd)
+  } else {
+    canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('mousemove', handleMouseMove)
+    canvas.addEventListener('mouseup', handleMouseUp)
+  }
 }
 
  main()
