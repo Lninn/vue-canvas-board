@@ -1,6 +1,6 @@
 import './style.css'
 
-import { HostPoint } from './host'
+import { Board } from './board'
 import { create_canvas } from './shared'
 import { PointProps } from './type'
 import { IS_MOBILE } from './constant'
@@ -11,17 +11,17 @@ function main() {
 
   const { canvas, ctx } = payload
 
-  const host = new HostPoint()
+  const board = new Board()
 
   const clear = () => {
     const { width, height } = canvas
     ctx.clearRect(0, 0, width, height)
   }
   const update = () => {
-    host.update()
+    board.update()
   }
   const draw = () => {
-    host.draw(ctx)
+    board.draw(ctx)
   }
   const loop = () => {
     clear()
@@ -34,7 +34,7 @@ function main() {
     requestAnimationFrame(loop)
   }
 
-  bind_event(canvas, host)
+  bind_event(canvas, board)
 
   start()
 }
@@ -53,29 +53,29 @@ const to_pc_point = (ev: MouseEvent) => {
   return p
 }
 
-const bind_event = (canvas: HTMLCanvasElement, host: HostPoint) => {
+const bind_event = (canvas: HTMLCanvasElement, host: Board) => {
   const handleMouseDown = (ev: MouseEvent) => {
     const crtP = to_pc_point(ev)
-    host.onPointerDown(crtP)
+    host.on_pointer_down(crtP)
   }
   const handleMouseMove = (ev: MouseEvent) => {
     const crtP = to_pc_point(ev)
-    host.onMove(crtP)
+    host.on_move(crtP)
   }
   const handleMouseUp = () => {
-    host.onUp()
+    host.on_up()
   }
 
   const handleTouchStart = (ev: TouchEvent) => {
     const point = to_mobile_point(ev)
-    host.onPointerDown(point)
+    host.on_pointer_down(point)
   }
   const handleTouchMove = (ev: TouchEvent) => {
     const point = to_mobile_point(ev)
-    host.onMove(point)
+    host.on_move(point)
   }
   const handleTouchEnd = () => {
-    host.onUp()
+    host.on_up()
   }
 
   if (IS_MOBILE) {

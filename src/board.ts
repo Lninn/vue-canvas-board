@@ -6,14 +6,16 @@ const RECTANGLE_STYLE: CanvasApplyStyle = {
   strokeStyle: '#f7a400',
 }
 
-const enum Action {
+const enum DrawAction {
   Create,
   Move,
+  Reize,
 }
 
-export class HostPoint {
+export class Board {
   private has_down: boolean
   private down_point: PointProps | null
+  private click_down_pont: PointProps | null
   private move_point: PointProps | null
 
   private width: number
@@ -24,7 +26,7 @@ export class HostPoint {
   private rectangleList: Rectangle[]
   private currentRectangle: Rectangle | null
 
-  private action: Action
+  private action: DrawAction
 
   constructor() {
     const { clientWidth, clientHeight } = document.documentElement
@@ -35,52 +37,60 @@ export class HostPoint {
     this.center = c
     this.has_down = false
     this.down_point = null
+    this.click_down_pont = null
     this.move_point = null
     this.currentRectangleProps = null
     this.rectangleList = []
     this.currentRectangle = null
-    this.action = Action.Create
+    this.action = DrawAction.Create
   }
 
-  public onPointerDown(crtP: PointProps) {
-    const rectangle = this.try_find_rectangle(crtP)
-
+  public on_pointer_down(crtP: PointProps) {
     this.reset_rectangle()
 
-    if (rectangle) {
-      rectangle.focus_toggle(true)
-      this.currentRectangle = rectangle
+    const r = this.try_find_rectangle(crtP)
 
-      const offsetX = crtP.x - rectangle.props.x
-      const offsetY = crtP.y - rectangle.props.y
+    if (r) {
+      r.focus_toggle(true)
+      this.currentRectangle = r
 
-      this.action = Action.Move
+      const offsetX = crtP.x - r.props.x
+      const offsetY = crtP.y - r.props.y
+
       this.down_point = { x: offsetX, y: offsetY }
+      this.action = DrawAction.Move
+
+      if (r.has_placement()) {
+        this.action = DrawAction.Reize
+        // TODO
+        console.log(r)
+      }
     } else {
-      this.action = Action.Create
+      this.action = DrawAction.Create
       this.down_point = crtP
     }
 
     this.has_down = true
+    this.click_down_pont = crtP
   }
 
-  public onMove(p: PointProps) {
+  public on_move(p: PointProps) {
     if (this.has_down) {
       this.move_point = p
     }
   }
 
-  public onUp() {
+  public on_up() {
     const props = this.getCurrentRectangleProps()
 
     switch (this.action) {
-      case Action.Create:
+      case DrawAction.Create:
         if (props) {
           const r = new Rectangle(props, RECTANGLE_STYLE)
           this.rectangleList.push(r)
         }
         break
-      case Action.Move:
+      case DrawAction.Move:
         break
     }
 
@@ -90,17 +100,18 @@ export class HostPoint {
   }
 
   private try_find_rectangle(p: PointProps) {
-    for (const rectangle of this.rectangleList) {
-      if (rectangle.hasInteracion(p)) return rectangle
-    }
+    const r = this.rectangleList.find((rect) => {
+      return rect.hasInteracion(p)
+    })
 
-    return null
+    return r
   }
 
   private reset_rectangle() {
     const rectangle = this.currentRectangle
     if (rectangle) {
       rectangle.focus_toggle(false)
+      rectangle.reset()
     }
   }
 
@@ -154,19 +165,25 @@ export class HostPoint {
 
     if (this.down_point) draw_line(ctx, this.center, this.down_point, { strokeStyle: '#ff0000' })
     if (this.move_point) draw_line(ctx, this.center, this.move_point, { strokeStyle: '#00b341' })
+    if (this.click_down_pont)
+      draw_line(ctx, this.center, this.click_down_pont, { strokeStyle: '#000' })
   }
 
   public update() {
     const { currentRectangle, rectangleList, down_point, move_point } = this
     const nextProps = this.getCurrentRectangleProps()
     switch (this.action) {
-      case Action.Create:
+      case DrawAction.Create:
         this.currentRectangleProps = nextProps
         break
-      case Action.Move:
+      case DrawAction.Move:
         if (currentRectangle && down_point && move_point) {
           currentRectangle.onMove(down_point, move_point)
         }
+        break
+      case DrawAction.Reize:
+        //
+        break
     }
 
     for (const rectangle of rectangleList) {

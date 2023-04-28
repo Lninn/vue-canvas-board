@@ -8,7 +8,7 @@ import {
 } from './shared'
 import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
-const enum Placement {
+export const enum Placement {
   TopLeft = 'TopLeft',
   LeftTop = 'LeftTop',
 
@@ -99,7 +99,12 @@ export interface RectangleProps {
   h: number
 }
 
+export const isRectangle = (obj: any): obj is Rectangle => {
+  return obj && 'type' in obj && obj['type'] === 'rectangle'
+}
+
 export class Rectangle {
+  public typp = 'rectangle'
   public props: RectangleProps
   private hasFocus = false
 
@@ -138,10 +143,10 @@ export class Rectangle {
 
     if (!map) return null
 
-    const entries = Object.entries(map)
+    const entries = Object.entries(map) as [Placement, PointProps[]][]
 
     for (const borderItem of entries) {
-      const [, points] = borderItem
+      const [placement, points] = borderItem
 
       const [topLeftCornerPoint] = points
 
@@ -153,7 +158,7 @@ export class Rectangle {
       }
 
       if (rectangle_intersection(rectProps, p)) {
-        return borderItem
+        return placement
       }
     }
 
@@ -164,61 +169,27 @@ export class Rectangle {
     this.hasFocus = val
   }
 
-  public hasInteracion(p: PointProps) {
-    // const [placement] = this.getPlacementBorderIfMatch(p) || []
+  public reset() {
+    this.activePlacement = null
+  }
 
-    // if (placement) {
-    //   this.activePlacement = placement as Placement
-    //   // TODO
-    //   document.body.style.cursor = 'n-resize'
-    //   return true
-    // }
-    //
+  public has_placement() {
+    return !!this.activePlacement
+  }
+
+  public hasInteracion(p: PointProps) {
+    const placement = this.getPlacementBorderIfMatch(p)
+
+    if (placement) {
+      this.activePlacement = placement as Placement
+      // TODO
+      // document.body.style.cursor = 'n-resize'
+      return true
+    }
 
     const intersectionInRect = rectangle_intersection(adjust_rectangle_props(this.props), p)
 
     return intersectionInRect
-  }
-
-  private resize(p: PointProps) {
-    const placement = this.activePlacement
-
-    if (!placement) return
-
-    switch (placement) {
-      case Placement.TopLeft:
-      case Placement.LeftTop:
-        break
-
-      case Placement.Top:
-        //
-        break
-
-      case Placement.TopRight:
-      case Placement.RightTop:
-        //
-        break
-
-      case Placement.Right:
-        this.props.w = p.x
-        break
-
-      case Placement.BottomRight:
-      case Placement.RightBottom:
-        break
-
-      case Placement.Bottom:
-        this.props.h = p.y
-        break
-
-      case Placement.BottomLeft:
-      case Placement.LeftBottom:
-        break
-
-      case Placement.Left:
-        this.props.x = p.x
-        break
-    }
   }
 
   public onMove(down_point: PointProps, move_point: PointProps) {
@@ -237,6 +208,13 @@ export class Rectangle {
 
     for (const points of Object.values(map)) {
       draw_points(ctx, points, style)
+    }
+
+    const placement = this.activePlacement
+    if (placement) {
+      const points = map[placement]
+
+      draw_points(ctx, points, { fillStyle: 'red' })
     }
   }
 

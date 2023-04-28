@@ -1,5 +1,5 @@
 import { BORDER_PADDING } from './constant'
-import { RectangleProps } from './rectangle'
+import { Placement, RectangleProps } from './rectangle'
 import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
 export const with_padding = (points: PointProps[]) => {
@@ -164,4 +164,36 @@ export const adjust_rectangle_props = (props: RectangleProps) => {
   if (yPartProps) finalProps = { ...finalProps, ...yPartProps }
 
   return finalProps
+}
+
+export const on_resize = () => (placement: Placement) => {
+  switch (placement) {
+    case Placement.TopLeft:
+    case Placement.LeftTop:
+      break
+
+    case Placement.Top:
+      break
+
+    case Placement.TopRight:
+    case Placement.RightTop:
+      break
+
+    case Placement.Right:
+      break
+
+    case Placement.BottomRight:
+    case Placement.RightBottom:
+      break
+
+    case Placement.Bottom:
+      break
+
+    case Placement.BottomLeft:
+    case Placement.LeftBottom:
+      break
+
+    case Placement.Left:
+      break
+  }
 }
