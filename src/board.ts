@@ -1,5 +1,10 @@
-import { Rectangle, RectangleProps } from './rectangle'
-import { draw_line, draw_rectangle } from './shared'
+import { MetaList, Rectangle, create_rectangle_meta_list } from './rectangle'
+import {
+  create_rectangle_props,
+  draw_line,
+  draw_rectangle_meta,
+  mutate_rectangle_size,
+} from './shared'
 import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
 
 const RECTANGLE_STYLE: CanvasApplyStyle = {
@@ -12,6 +17,8 @@ const enum DrawAction {
   Reize,
 }
 
+const COLORS: string[] = ['red', 'blue', 'yellow', 'green']
+
 export class Board {
   private has_down: boolean
   private down_point: PointProps | null
@@ -22,7 +29,7 @@ export class Board {
   private height: number
 
   private center: PointProps
-  private currentRectangleProps: RectangleProps | null
+  private crt_rectangle_meta: MetaList | null
   private rectangleList: Rectangle[]
   private currentRectangle: Rectangle | null
 
@@ -39,7 +46,7 @@ export class Board {
     this.down_point = null
     this.click_down_pont = null
     this.move_point = null
-    this.currentRectangleProps = null
+    this.crt_rectangle_meta = null
     this.rectangleList = []
     this.currentRectangle = null
     this.action = DrawAction.Create
@@ -81,7 +88,8 @@ export class Board {
   }
 
   public on_up() {
-    const props = this.getCurrentRectangleProps()
+    const { down_point, move_point } = this
+    const props = create_rectangle_props(down_point, move_point)
 
     switch (this.action) {
       case DrawAction.Create:
@@ -94,6 +102,7 @@ export class Board {
         break
     }
 
+    this.crt_rectangle_meta = null
     this.has_down = false
     this.down_point = null
     this.move_point = null
@@ -115,24 +124,6 @@ export class Board {
     }
   }
 
-  private getCurrentRectangleProps() {
-    const { down_point, move_point } = this
-
-    if (!down_point || !move_point) return null
-
-    const sizeOfHorizontal = move_point.x - down_point.x
-    const sizeOfVertical = move_point.y - down_point.y
-
-    const props: RectangleProps = {
-      x: down_point.x,
-      y: down_point.y,
-      w: sizeOfHorizontal,
-      h: sizeOfVertical,
-    }
-
-    return props
-  }
-
   private renderCurrentRectangleList(ctx: I2DCtx) {
     for (const rectangle of this.rectangleList) {
       rectangle.draw(ctx)
@@ -140,10 +131,10 @@ export class Board {
   }
 
   private renderRectangle(ctx: I2DCtx) {
-    const props = this.currentRectangleProps
+    const meta = this.crt_rectangle_meta
 
-    if (props) {
-      draw_rectangle(ctx, props, RECTANGLE_STYLE)
+    if (meta) {
+      draw_rectangle_meta(ctx, meta, RECTANGLE_STYLE)
     }
   }
 
@@ -169,20 +160,37 @@ export class Board {
       draw_line(ctx, this.center, this.click_down_pont, { strokeStyle: '#000' })
   }
 
+  private render_rectangle_meta_points(ctx: I2DCtx) {
+    const r = this.currentRectangle
+    if (!r) return
+
+    const { meta } = r.get_meta_and_placement()
+
+    meta.forEach((p, idx) => {
+      if (this.down_point) draw_line(ctx, this.center, p, { strokeStyle: COLORS[idx] })
+    })
+  }
+
   public update() {
     const { currentRectangle, rectangleList, down_point, move_point } = this
-    const nextProps = this.getCurrentRectangleProps()
+    const props = create_rectangle_props(down_point, move_point)
+
     switch (this.action) {
       case DrawAction.Create:
-        this.currentRectangleProps = nextProps
+        if (props) {
+          const meta = create_rectangle_meta_list(props)
+          this.crt_rectangle_meta = meta
+        }
         break
       case DrawAction.Move:
-        if (currentRectangle && down_point && move_point) {
-          currentRectangle.onMove(down_point, move_point)
+        if (currentRectangle) {
+          currentRectangle.on_move(down_point, move_point)
         }
         break
       case DrawAction.Reize:
-        //
+        if (currentRectangle) {
+          mutate_rectangle_size(currentRectangle, move_point)
+        }
         break
     }
 
@@ -196,5 +204,6 @@ export class Board {
     this.renderLineOfMousePoint(ctx)
     this.renderRectangle(ctx)
     this.renderCurrentRectangleList(ctx)
+    this.render_rectangle_meta_points(ctx)
   }
 }

@@ -1,34 +1,13 @@
 import { BORDER_PADDING, BORDER_RECT_SIZE } from './constant'
 import {
   adjust_rectangle_props,
+  create_rectangle_props,
   draw_points,
-  draw_rectangle,
+  draw_rectangle_meta,
   rectangle_intersection,
   with_padding,
 } from './shared'
-import { CanvasApplyStyle, I2DCtx, PointProps } from './type'
-
-export const enum Placement {
-  TopLeft = 'TopLeft',
-  LeftTop = 'LeftTop',
-
-  Top = 'Top',
-
-  TopRight = 'TopRight',
-  RightTop = 'RightTop',
-
-  Right = 'Right',
-
-  BottomRight = 'BottomRight',
-  RightBottom = 'RightBottom',
-
-  Bottom = 'Bottom',
-
-  BottomLeft = 'BottomLeft',
-  LeftBottom = 'LeftBottom',
-
-  Left = 'Left',
-}
+import { CanvasApplyStyle, I2DCtx, Placement, PointProps } from './type'
 
 type BorderPlacementMap = Record<Placement, PointProps[]>
 
@@ -99,14 +78,28 @@ export interface RectangleProps {
   h: number
 }
 
-export const isRectangle = (obj: any): obj is Rectangle => {
+export type MetaList = [PointProps, PointProps, PointProps, PointProps]
+
+export const is_rectangle = (obj: any): obj is Rectangle => {
   return obj && 'type' in obj && obj['type'] === 'rectangle'
+}
+
+export const create_rectangle_meta_list = (props: RectangleProps): MetaList => {
+  const { x, y, w, h } = props
+
+  return [
+    { x, y },
+    { x: x + w, y },
+    { x: x + w, y: y + h },
+    { x, y: y + h },
+  ]
 }
 
 export class Rectangle {
   public typp = 'rectangle'
   public props: RectangleProps
   private hasFocus = false
+  private meta: MetaList
 
   private borderPlacement: BorderPlacementMap | null
   private activePlacement: Placement | null
@@ -115,6 +108,7 @@ export class Rectangle {
 
   constructor(props: RectangleProps, style: CanvasApplyStyle) {
     this.props = props
+    this.meta = create_rectangle_meta_list(props)
 
     this.activePlacement = null
     this.borderPlacement = this.createBorder()
@@ -138,7 +132,7 @@ export class Rectangle {
     return borderPlacement
   }
 
-  private getPlacementBorderIfMatch(p: PointProps) {
+  private get_placement_border_if_match(p: PointProps) {
     const map = this.borderPlacement
 
     if (!map) return null
@@ -165,6 +159,11 @@ export class Rectangle {
     return null
   }
 
+  public get_meta_and_placement() {
+    const { activePlacement, meta } = this
+    return { placement: activePlacement, meta }
+  }
+
   public focus_toggle(val: boolean) {
     this.hasFocus = val
   }
@@ -178,7 +177,7 @@ export class Rectangle {
   }
 
   public hasInteracion(p: PointProps) {
-    const placement = this.getPlacementBorderIfMatch(p)
+    const placement = this.get_placement_border_if_match(p)
 
     if (placement) {
       this.activePlacement = placement as Placement
@@ -191,13 +190,31 @@ export class Rectangle {
 
     return intersectionInRect
   }
+  public on_size(down_point: PointProps | null, move_point: PointProps | null) {
+    if (!down_point || !move_point) {
+      return
+    }
 
-  public onMove(down_point: PointProps, move_point: PointProps) {
-    const offsetX = move_point.x - down_point.x
-    const offsetY = move_point.y - down_point.y
+    const props = create_rectangle_props(down_point, move_point)
+    if (!props) return
 
-    this.props.x = offsetX
-    this.props.y = offsetY
+    const meta = create_rectangle_meta_list(props)
+    this.props = props
+    this.meta = meta
+  }
+  public on_move(down_point: PointProps | null, move_point: PointProps | null) {
+    if (!down_point || !move_point) {
+      return
+    }
+
+    const xOffset = move_point.x - down_point.x
+    const yOffset = move_point.y - down_point.y
+
+    const props = { ...this.props, x: xOffset, y: yOffset }
+
+    const meta = create_rectangle_meta_list(props)
+    this.props = props
+    this.meta = meta
   }
 
   private renderBorder(ctx: CanvasRenderingContext2D) {
@@ -225,7 +242,7 @@ export class Rectangle {
   }
 
   public draw(ctx: I2DCtx) {
-    draw_rectangle(ctx, this.props, this.style)
+    draw_rectangle_meta(ctx, this.meta, this.style)
 
     if (this.hasFocus) {
       this.renderBorder(ctx)

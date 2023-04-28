@@ -9,6 +9,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
     'prettier',
+    'vue',
   ],
   overrides: [],
   parser: '@typescript-eslint/parser',

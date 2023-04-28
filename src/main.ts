@@ -4,6 +4,7 @@ import { Board } from './board'
 import { create_canvas } from './shared'
 import { PointProps } from './type'
 import { IS_MOBILE } from './constant'
+import setup from './app-setup'
 
 function main() {
   const payload = create_canvas()
@@ -89,4 +90,5 @@ const bind_event = (canvas: HTMLCanvasElement, host: Board) => {
   }
 }
 
+setup()
 main()
