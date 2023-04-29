@@ -2,7 +2,6 @@
   <div class="tool">
     <div class="tool-inner">
       <div>{{ action_ref }}</div>
-      <div>{{ moveInfo }}</div>
       <div>count {{ count_ref }}</div>
       <div>
         <select v-model="type">
@@ -17,11 +16,10 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 import { action_ref, count_ref } from './scene';
-import { moveInfo } from './rectangle';
-import { update_state } from './constant';
+import { INITIAL_SHAPE_TYPE, update_state } from './constant';
 import { ShapeType } from './type'
 
-const type = ref('rectangle')
+const type = ref(INITIAL_SHAPE_TYPE)
 
 watchEffect(() => {
   update_state({ shape_type: type.value as unknown as ShapeType })

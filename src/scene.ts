@@ -1,8 +1,21 @@
-// import { Circle } from "./circle"
-import { CORE_STATE, RECTANGLE_STYLE } from "./constant"
-import { Rectangle, RectangleProps } from "./rectangle"
-import { create_rectangle_meta_list, create_rectangle_props, draw_line, draw_rectangle, get_rectangle_next_size } from "./shared"
-import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, ShapeType } from "./type"
+import { CORE_STATE, ELLIPSE_STYLE, RECTANGLE_STYLE } from "./constant"
+import { DrawElement } from "./element"
+import {
+  create_ellipse_path,
+  create_rectangle_props,
+  draw_ellipse_path,
+  draw_line,
+  draw_rectangle,
+} from "./shared"
+import {
+  I2DCtx,
+  DrawAction,
+  PointProps,
+  CanvasApplyStyle,
+  ShapeType,
+  RectangleProps,
+  EllipsePath,
+} from "./type"
 
 import { ref } from 'vue'
 
@@ -13,11 +26,12 @@ export const count_ref = ref(0)
 
 export class Scene {
   private ctx: I2DCtx
-  private children: Rectangle[]
-  private selected: Rectangle | null
+  private children: DrawElement[]
+  private selected: DrawElement | null
   private action: DrawAction
 
   private active_props: RectangleProps | null
+  private ellipse_path: EllipsePath | null
 
   private has_down: boolean
   private down_point: PointProps | null
@@ -26,6 +40,7 @@ export class Scene {
   private height: number
   private center: PointProps
 
+
   constructor(ctx: I2DCtx) {
     this.children = []
     this.selected = null
@@ -33,6 +48,7 @@ export class Scene {
     this.action = INITIAL_DRAW_ACTION
 
     this.active_props = null
+    this.ellipse_path = null
 
     const { clientWidth, clientHeight } = document.documentElement
 
@@ -61,14 +77,14 @@ export class Scene {
     if (selIdx !== -1) {
       const selectRectangle = this.children[selIdx]
 
-      if (selectRectangle.activePlacement) {
+      if (selectRectangle.is_focus()) {
         this.action = DrawAction.Reize
 
-        this.active_props = selectRectangle.props
+        this.active_props = selectRectangle.getProps()
       } else {
         this.action = DrawAction.Move
 
-        this.active_props = selectRectangle.props
+        this.active_props = selectRectangle.getProps()
       }
 
       this.selected = selectRectangle
@@ -93,16 +109,13 @@ export class Scene {
     switch (this.action) {
       case DrawAction.Create:
         this.create()
-
-        count_ref.value = this.children.length
-
         this.active_props = null
         break
       case DrawAction.Move:
         this.active_props = null
       case DrawAction.Reize:
         if (this.selected) {
-          this.selected.activePlacement = null
+          this.selected.on_blur()
         }
 
         this.active_props = null
@@ -111,16 +124,16 @@ export class Scene {
   }
 
   private create() {
-    if (this.active_props) {
-      if (CORE_STATE.shape_type === ShapeType.Circle) {
-        // const r = new Circle({ x: this.active_props.x, y: this.active_props.y, r: 100 })
-        // this.children.push(r)
-      } else {
-        const r = new Rectangle(this.active_props, RECTANGLE_STYLE)
-        this.children.push(r)
-      }
+    if (!this.active_props) return
 
-    }
+    const element = DrawElement.get_instance(
+      CORE_STATE.shape_type,
+      this.active_props,
+      RECTANGLE_STYLE,
+    )
+
+    this.children.push(element)
+    count_ref.value = this.children.length
   }
 
   public update() {
@@ -133,6 +146,9 @@ export class Scene {
     switch (this.action) {
       case DrawAction.Create:
         const props = create_rectangle_props(down_point, move_point)
+
+        const path = create_ellipse_path(props)
+        this.ellipse_path = path
 
         this.active_props = props
         break
@@ -147,17 +163,11 @@ export class Scene {
         }
         break
       case DrawAction.Reize:
-        if (this.selected) {
-          const { activePlacement } = this.selected
-          if (!activePlacement || !this.active_props) return
-
-          const [_move, _down] = get_rectangle_next_size(
-            activePlacement,
-            create_rectangle_meta_list(this.active_props),
+        if (this.selected && this.active_props) {
+          this.selected.on_size(
+            this.active_props,
             move_point,
           )
-
-          this.selected.on_size(_move, _down)
         }
         break
     }
@@ -172,7 +182,16 @@ export class Scene {
     }
 
     if (this.active_props && this.action === DrawAction.Create) {
-      draw_rectangle(this.ctx, this.active_props, RECTANGLE_STYLE)
+      
+      if (this.action === DrawAction.Create) {
+        draw_rectangle(this.ctx, this.active_props, RECTANGLE_STYLE)
+
+        if (CORE_STATE.shape_type === ShapeType.Circle) {
+          if (this.ellipse_path) {
+            draw_ellipse_path(ctx, this.ellipse_path, ELLIPSE_STYLE)
+          }
+        }
+      }
     }
   }
 

@@ -1,6 +1,5 @@
-import { BORDER_PADDING, BORDER_RECT_SIZE } from './constant'
-import { RectangleProps } from './rectangle'
-import { CanvasApplyStyle, Placement, I2DCtx, PointProps, CoordsRange, BorderPlacementMap } from './type'
+import { BORDER_PADDING } from './constant'
+import { CanvasApplyStyle, Placement, I2DCtx, PointProps, CoordsRange, RectangleProps, EllipsePath } from './type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING
@@ -168,7 +167,7 @@ export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: Canva
   apply_canvas_style(ctx, style)
 }
 
-export const adjust_rectangle_props = (props: RectangleProps) => {
+export const adjust_rectangle_props = (props: RectangleProps): RectangleProps => {
   const { x, y, w, h } = props
 
   let xPartProps: Pick<RectangleProps, 'x' | 'w'> | null = null
@@ -222,66 +221,6 @@ export const get_rectangle_next_size = (
   }
 }
 
-const with_border_rect = (point: PointProps) => {
-  const size = BORDER_RECT_SIZE
-
-  const ps: PointProps[] = [
-    { x: -size, y: -size },
-    { x: size, y: -size },
-    { x: size, y: size },
-    { x: -size, y: size },
-  ]
-
-  return ps.map((p) => {
-    const np: PointProps = {
-      x: p.x + point.x,
-      y: p.y + point.y,
-    }
-
-    return np
-  })
-}
-
-export const create_border_rects = (props: RectangleProps, cornerPoints: PointProps[]) => {
-  const { x, y, w, h } = props
-
-  const [p1, p2, p3, p4] = cornerPoints
-
-  const c1: PointProps = { x: x + w / 2, y: y - BORDER_PADDING }
-  const c2: PointProps = { x: x + w + BORDER_PADDING, y: y + h / 2 }
-  const c3: PointProps = { x: x + w / 2, y: y + h + BORDER_PADDING }
-  const c4: PointProps = { x: x - BORDER_PADDING, y: y + h / 2 }
-
-  const tl = with_border_rect(p1)
-  const tr = with_border_rect(p2)
-  const br = with_border_rect(p3)
-  const bl = with_border_rect(p4)
-
-  const map: BorderPlacementMap = {
-    TopLeft: tl,
-    LeftTop: tl,
-
-    Top: with_border_rect(c1),
-
-    TopRight: tr,
-    RightTop: tr,
-
-    Right: with_border_rect(c2),
-
-    RightBottom: br,
-    BottomRight: br,
-
-    Bottom: with_border_rect(c3),
-
-    BottomLeft: bl,
-    LeftBottom: bl,
-
-    Left: with_border_rect(c4),
-  }
-
-  return map
-}
-
 export const create_rectangle_meta_list = (props: RectangleProps): CoordsRange => {
   const { x, y, w, h } = props
 
@@ -291,4 +230,32 @@ export const create_rectangle_meta_list = (props: RectangleProps): CoordsRange =
     { x: x + w, y: y + h },
     { x, y: y + h },
   ]
+}
+
+export const create_ellipse_path = (props: RectangleProps): EllipsePath => {
+  const { x, y, w, h } = props
+
+  return {
+    x: x + w / 2,
+    y: y + h / 2,
+    rx: w / 2,
+    ry: h / 2,
+  }
+}
+
+export const draw_ellipse_path = (ctx: I2DCtx, path: EllipsePath, style?: CanvasApplyStyle) => {
+  ctx.beginPath()
+
+  ctx.ellipse(
+    path.x,
+    path.y,
+    path.rx,
+    path.ry,
+    0,
+    0,
+    Math.PI * 2,
+    false,
+  )
+
+  apply_canvas_style(ctx, style)
 }

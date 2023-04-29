@@ -1,3 +1,5 @@
+import { Border } from "./border"
+
 export type I2DCtx = CanvasRenderingContext2D
 
 export interface PointProps {
@@ -37,13 +39,40 @@ export const enum DrawAction {
 
 export type CoordsRange = [PointProps, PointProps, PointProps, PointProps]
 
-export type BorderPlacementMap = Record<Placement, PointProps[]>
-
 export const enum ShapeType {
-  RectAngle = 'rectangle',
+  Rectangle = 'rectangle',
   Circle = 'circle',
 }
 
 export interface CoreState {
   shape_type: ShapeType
+}
+
+export interface RectangleProps {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export interface EllipsePath {
+  x: number
+  y: number
+  rx: number
+  ry: number
+}
+
+interface IElement {
+  type: ShapeType
+  props: RectangleProps
+  path: EllipsePath | RectangleProps
+  style: CanvasApplyStyle
+  activePlacement: Placement | null
+  border: Border
+  draw: (ctx: I2DCtx, focus?: boolean) => void
+  updateProps: (props: RectangleProps) => void
+  check_intersect: (p: PointProps) => boolean
+  on_move: (down_point: PointProps, move_point: PointProps) => void
+  on_size: (move_point: PointProps, down_point: PointProps) => void
+  createPath: (props: RectangleProps) => unknown
 }
