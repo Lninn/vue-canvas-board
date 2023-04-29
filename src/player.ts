@@ -1,5 +1,5 @@
-import { Rectangle, RectangleProps, create_rectangle_meta_list } from "./rectangle"
-import { create_rectangle_props, draw_rectangle_meta, get_rectangle_next_size } from "./shared"
+import { Rectangle, RectangleProps } from "./rectangle"
+import { create_rectangle_meta_list, create_rectangle_props, draw_rectangle_meta, get_rectangle_next_size } from "./shared"
 import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, CoordsRange } from "./type"
 
 import { ref } from 'vue'
@@ -7,6 +7,7 @@ import { ref } from 'vue'
 const INITIAL_DRAW_ACTION = DrawAction.Create
 
 export const action_ref = ref(INITIAL_DRAW_ACTION)
+export const count_ref = ref(0)
 
 const RECTANGLE_STYLE: CanvasApplyStyle = {
   strokeStyle: '#f7a400',
@@ -69,6 +70,8 @@ export class Player {
         if (this.active_props && this.active_coords) {
           const r = new Rectangle(this.active_props, this.active_coords, RECTANGLE_STYLE)
           this.children.push(r)
+
+          count_ref.value = this.children.length
 
           this.active_coords = null
           this.active_props = null

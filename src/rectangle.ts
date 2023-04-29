@@ -1,79 +1,19 @@
-import { BORDER_PADDING, BORDER_RECT_SIZE } from './constant'
+import { BORDER_PADDING } from './constant'
 import {
   adjust_rectangle_props,
+  create_border_rects,
+  create_rectangle_meta_list,
   create_rectangle_props,
   draw_points,
   draw_rectangle_meta,
   rectangle_intersection,
   with_padding,
 } from './shared'
-import { CanvasApplyStyle, CoordsRange, I2DCtx, Placement, PointProps } from './type'
+import { BorderPlacementMap, CanvasApplyStyle, CoordsRange, I2DCtx, Placement, PointProps } from './type'
 
 import { ref } from 'vue'
 
 export const moveInfo = ref<any>()
-
-type BorderPlacementMap = Record<Placement, PointProps[]>
-
-const create_border_rects = (props: RectangleProps, cornerPoints: PointProps[]) => {
-  const { x, y, w, h } = props
-
-  const [p1, p2, p3, p4] = cornerPoints
-
-  const c1: PointProps = { x: x + w / 2, y: y - BORDER_PADDING }
-  const c2: PointProps = { x: x + w + BORDER_PADDING, y: y + h / 2 }
-  const c3: PointProps = { x: x + w / 2, y: y + h + BORDER_PADDING }
-  const c4: PointProps = { x: x - BORDER_PADDING, y: y + h / 2 }
-
-  const tl = with_border_rect(p1)
-  const tr = with_border_rect(p2)
-  const br = with_border_rect(p3)
-  const bl = with_border_rect(p4)
-
-  const map: BorderPlacementMap = {
-    TopLeft: tl,
-    LeftTop: tl,
-
-    Top: with_border_rect(c1),
-
-    TopRight: tr,
-    RightTop: tr,
-
-    Right: with_border_rect(c2),
-
-    RightBottom: br,
-    BottomRight: br,
-
-    Bottom: with_border_rect(c3),
-
-    BottomLeft: bl,
-    LeftBottom: bl,
-
-    Left: with_border_rect(c4),
-  }
-
-  return map
-}
-
-const with_border_rect = (point: PointProps) => {
-  const size = BORDER_RECT_SIZE
-
-  const ps: PointProps[] = [
-    { x: -size, y: -size },
-    { x: size, y: -size },
-    { x: size, y: size },
-    { x: -size, y: size },
-  ]
-
-  return ps.map((p) => {
-    const np: PointProps = {
-      x: p.x + point.x,
-      y: p.y + point.y,
-    }
-
-    return np
-  })
-}
 
 export interface RectangleProps {
   x: number
@@ -82,23 +22,7 @@ export interface RectangleProps {
   h: number
 }
 
-export const is_rectangle = (obj: any): obj is Rectangle => {
-  return obj && 'type' in obj && obj['type'] === 'rectangle'
-}
-
-export const create_rectangle_meta_list = (props: RectangleProps): CoordsRange => {
-  const { x, y, w, h } = props
-
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x: x + w, y: y + h },
-    { x, y: y + h },
-  ]
-}
-
 export class Rectangle {
-  public typp = 'rectangle'
   public props: RectangleProps
   public coords: CoordsRange
   public activePlacement: Placement | null
@@ -110,10 +34,10 @@ export class Rectangle {
   constructor(props: RectangleProps, coords: CoordsRange, style: CanvasApplyStyle) {
     this.props = props
     this.coords = coords
-
-    this.activePlacement = null
     this.borderPlacement = this.createBorder()
+
     this.style = style
+    this.activePlacement = null
   }
 
   private createBorder() {
@@ -174,27 +98,29 @@ export class Rectangle {
 
     return intersectionInRect
   }
-  public on_size(move_point: PointProps, down_point: PointProps) {
-    const props = create_rectangle_props(move_point, down_point)
-    const meta = create_rectangle_meta_list(props)
+
+  private translate(props: RectangleProps) {
+    const coords = create_rectangle_meta_list(props)
+
+    moveInfo.value = props
 
     this.props = props
-    this.coords = meta
+    this.coords = coords
     this.borderPlacement = this.createBorder()
   }
+
+  public on_size(move_point: PointProps, down_point: PointProps) {
+    const props = create_rectangle_props(move_point, down_point)
+
+    this.translate(props)
+  }
+
   public on_move(down_point: PointProps, move_point: PointProps) {
     const xOffset = move_point.x - down_point.x
     const yOffset = move_point.y - down_point.y
 
     const props = { ...this.props, x: xOffset, y: yOffset }
-
-    const meta = create_rectangle_meta_list(props)
-
-    moveInfo.value = props
-
-    this.props = props
-    this.coords = meta
-    this.borderPlacement = this.createBorder()
+    this.translate(props)
   }
 
   private render_border(ctx: CanvasRenderingContext2D) {

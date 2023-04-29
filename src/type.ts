@@ -45,3 +45,6 @@ export const enum DrawAction {
 }
 
 export type CoordsRange = [PointProps, PointProps, PointProps, PointProps]
+
+export type BorderPlacementMap = Record<Placement, PointProps[]>
+
