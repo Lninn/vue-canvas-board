@@ -5,15 +5,6 @@ export interface PointProps {
   y: number
 }
 
-export interface Shape {
-  hasFocus: boolean
-  hasInteracion: (p: PointProps) => boolean
-  onMove: (p: PointProps, downPoint: PointProps) => void
-  draw: (ctx: I2DCtx) => void
-  renderBorder: (ctx: I2DCtx) => void
-  update: () => void
-}
-
 export type CanvasApplyStyle = Partial<Pick<I2DCtx, 'strokeStyle' | 'fillStyle'>>
 
 export const enum Placement {
@@ -48,3 +39,11 @@ export type CoordsRange = [PointProps, PointProps, PointProps, PointProps]
 
 export type BorderPlacementMap = Record<Placement, PointProps[]>
 
+export const enum ShapeType {
+  RectAngle = 'rectangle',
+  Circle = 'circle',
+}
+
+export interface CoreState {
+  shape_type: ShapeType
+}

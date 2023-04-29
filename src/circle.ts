@@ -8,8 +8,7 @@ interface CircleProps {
 }
 
 export class Circle {
-  props: CircleProps
-  hasFocus = false
+  public props: CircleProps
 
   constructor(props: CircleProps) {
     this.props = props
@@ -29,7 +28,7 @@ export class Circle {
     return p
   }
 
-  renderBorder(ctx: I2DCtx) {
+  private renderBorder(ctx: I2DCtx) {
     const p1 = this.getPoint(45)
     const p2 = this.getPoint(135)
     const p3 = this.getPoint(225)
@@ -59,18 +58,14 @@ export class Circle {
     ctx.fill()
   }
 
-  hasInteracion(p: PointProps) {
+  public hasInteracion(p: PointProps) {
     return get_length(this.props, p) <= this.props.r
   }
 
-  onMove(p: PointProps) {
-    this.props.x = p.x
-    this.props.y = p.y
-  }
-
-  draw(ctx: I2DCtx) {
+  public draw(ctx: I2DCtx, hasFocus?: boolean) {
     this.render(ctx)
-    if (this.hasFocus) {
+
+    if (hasFocus) {
       this.renderBorder(ctx)
     }
   }

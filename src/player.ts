@@ -1,6 +1,8 @@
+// import { Circle } from "./circle"
+import { CORE_STATE } from "./constant"
 import { Rectangle, RectangleProps } from "./rectangle"
 import { create_rectangle_meta_list, create_rectangle_props, draw_rectangle_meta, get_rectangle_next_size } from "./shared"
-import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, CoordsRange } from "./type"
+import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, CoordsRange, ShapeType } from "./type"
 
 import { ref } from 'vue'
 
@@ -67,15 +69,12 @@ export class Player {
   public on_pointer_up() {
     switch (this.action) {
       case DrawAction.Create:
-        if (this.active_props && this.active_coords) {
-          const r = new Rectangle(this.active_props, this.active_coords, RECTANGLE_STYLE)
-          this.children.push(r)
+        this.create()
 
-          count_ref.value = this.children.length
+        count_ref.value = this.children.length
 
-          this.active_coords = null
-          this.active_props = null
-        }
+        this.active_coords = null
+        this.active_props = null
         break
       case DrawAction.Move:
         this.active_coords = null
@@ -88,6 +87,21 @@ export class Player {
         this.active_coords = null
         this.active_props = null
         break
+    }
+  }
+
+  private create() {
+    if (this.active_props && this.active_coords) {
+
+
+      if (CORE_STATE.shape_type === ShapeType.Circle) {
+        // const r = new Circle({ x: this.active_props.x, y: this.active_props.y, r: 100 })
+        // this.children.push(r)
+      } else {
+        const r = new Rectangle(this.active_props, this.active_coords, RECTANGLE_STYLE)
+        this.children.push(r)
+      }
+
     }
   }
 

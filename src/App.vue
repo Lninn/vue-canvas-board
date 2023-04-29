@@ -4,13 +4,28 @@
       <div>{{ action_ref }}</div>
       <div>{{ moveInfo }}</div>
       <div>count {{ count_ref }}</div>
+      <div>
+        <select v-model="type">
+          <option>rectangle</option>
+          <option>circle</option>
+        </select>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watchEffect } from 'vue';
 import { action_ref, count_ref } from './player';
 import { moveInfo } from './rectangle';
+import { update_state } from './constant';
+import { ShapeType } from './type'
+
+const type = ref('rectangle')
+
+watchEffect(() => {
+  update_state({ shape_type: type.value as unknown as ShapeType })
+})
 </script>
 
 <style lang="less">
@@ -49,5 +64,9 @@ import { moveInfo } from './rectangle';
 .row {
   display: flex;
   gap: 8px;
+}
+
+select {
+  font-size: 14px;
 }
 </style>
