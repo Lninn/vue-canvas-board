@@ -1,5 +1,5 @@
 import { BORDER_PADDING } from './constant'
-import { CanvasApplyStyle, Placement, I2DCtx, PointProps, CoordsRange, RectangleProps, EllipsePath } from './type'
+import { CanvasApplyStyle, I2DCtx, PointProps, RectangleProps, EllipsePath } from './type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING
@@ -143,6 +143,7 @@ export const apply_canvas_style = (ctx: I2DCtx, style?: CanvasApplyStyle) => {
     ctx.fillStyle = prevFillStyle
   }
 }
+
 export const create_rectangle_props = (
   down_point: PointProps,
   move_point: PointProps,
@@ -159,6 +160,7 @@ export const create_rectangle_props = (
 
   return props
 }
+
 export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: CanvasApplyStyle) => {
   const { x, y, w, h } = props
   ctx.beginPath()
@@ -181,55 +183,6 @@ export const adjust_rectangle_props = (props: RectangleProps): RectangleProps =>
   if (yPartProps) finalProps = { ...finalProps, ...yPartProps }
 
   return finalProps
-}
-
-export const get_rectangle_next_size = (
-  placement: Placement,
-  meta: CoordsRange,
-  move_point: PointProps
-): [PointProps, PointProps] => {
-  const [p1, p2, p3, p4] = meta
-
-  switch (placement) {
-    case Placement.TopLeft:
-    case Placement.LeftTop:
-      return [move_point, p3]
-
-    case Placement.Top:
-      return [{ x: p1.x, y: move_point.y }, p3]
-
-    case Placement.TopRight:
-    case Placement.RightTop:
-      return [move_point, p4]
-
-    case Placement.Right:
-      return [{ x: move_point.x, y: p3.y }, p1]
-
-    case Placement.BottomRight:
-    case Placement.RightBottom:
-      return [move_point, p1]
-
-    case Placement.Bottom:
-      return [{ x: p3.x, y: move_point.y }, p1]
-
-    case Placement.BottomLeft:
-    case Placement.LeftBottom:
-      return [move_point, p2]
-
-    case Placement.Left:
-      return [{ x: move_point.x, y: p1.y }, p3]
-  }
-}
-
-export const create_rectangle_meta_list = (props: RectangleProps): CoordsRange => {
-  const { x, y, w, h } = props
-
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x: x + w, y: y + h },
-    { x, y: y + h },
-  ]
 }
 
 export const create_ellipse_path = (props: RectangleProps): EllipsePath => {

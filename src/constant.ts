@@ -13,7 +13,7 @@ export const ELLIPSE_STYLE: CanvasApplyStyle = {
   strokeStyle: 'blue',
 }
 
-export const INITIAL_SHAPE_TYPE = ShapeType.Circle
+export const INITIAL_SHAPE_TYPE = ShapeType.Rectangle
 
 export let CORE_STATE: CoreState = {
   shape_type: INITIAL_SHAPE_TYPE

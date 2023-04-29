@@ -1,5 +1,6 @@
 import {
   CanvasApplyStyle,
+  CoordsRange,
   EllipsePath,
   Placement,
   PointProps,
@@ -10,11 +11,9 @@ import { Border } from './border';
 import {
   adjust_rectangle_props,
   create_ellipse_path,
-  create_rectangle_meta_list,
   create_rectangle_props,
   draw_ellipse_path,
   draw_rectangle,
-  get_rectangle_next_size,
   rectangle_intersection,
 } from './shared';
 
@@ -39,25 +38,11 @@ export class DrawElement {
     return new this(type, props, style)
   }
 
-  private create_path (props: RectangleProps) {
-    if (this.type === ShapeType.Circle) {
-      return create_ellipse_path(props)
-    } else {
-      return props
-    }
-  }
-
-  private update_props(props: RectangleProps) {
-    this.props = props
-    this.path = this.create_path(props)
-    this.border.update(props)
-  }
-
   public getProps() {
     return this.props
   }
 
-  public is_focus() {
+  public has_placement() {
     return !!this.activePlacement
   }
 
@@ -76,14 +61,78 @@ export class DrawElement {
   public on_size(currentProps: RectangleProps, move_point: PointProps) {
     if (!this.activePlacement) return
 
-    const [_move, _down] = get_rectangle_next_size(
-      this.activePlacement,
-      create_rectangle_meta_list(currentProps),
+    const result= this.coord_transform(
+      currentProps,
       move_point,
     )
 
+    if (!result) return
+
+    const [_move, _down] = result
+
     const props = create_rectangle_props(_move, _down)
     this.update_props(props)
+  }
+
+  public update_props(props: RectangleProps) {
+    this.props = props
+    this.path = this.create_path(props)
+    this.border.update(props)
+  }
+
+  private create_path (props: RectangleProps) {
+    if (this.type === ShapeType.Circle) {
+      return create_ellipse_path(props)
+    } else {
+      return props
+    }
+  }
+
+  private coord_transform(currentProps: RectangleProps, move_point: PointProps) {
+    const [p1, p2, p3, p4] = this.create_points_by_props(currentProps)
+
+    switch (this.activePlacement) {
+      case Placement.TopLeft:
+      case Placement.LeftTop:
+        return [move_point, p3]
+
+      case Placement.Top:
+        return [{ x: p1.x, y: move_point.y }, p3]
+
+      case Placement.TopRight:
+      case Placement.RightTop:
+        return [move_point, p4]
+
+      case Placement.Right:
+        return [{ x: move_point.x, y: p3.y }, p1]
+
+      case Placement.BottomRight:
+      case Placement.RightBottom:
+        return [move_point, p1]
+
+      case Placement.Bottom:
+        return [{ x: p3.x, y: move_point.y }, p1]
+
+      case Placement.BottomLeft:
+      case Placement.LeftBottom:
+        return [move_point, p2]
+
+      case Placement.Left:
+        return [{ x: move_point.x, y: p1.y }, p3]
+    }
+
+    return false
+  }
+
+  private create_points_by_props(props: RectangleProps): CoordsRange {
+    const { x, y, w, h } = props
+  
+    return [
+      { x, y },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+      { x, y: y + h },
+    ]
   }
 
   public check_intersect(p: PointProps) {

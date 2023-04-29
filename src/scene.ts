@@ -1,20 +1,15 @@
-import { CORE_STATE, ELLIPSE_STYLE, RECTANGLE_STYLE } from "./constant"
+import { CORE_STATE, RECTANGLE_STYLE } from "./constant"
 import { DrawElement } from "./element"
 import {
-  create_ellipse_path,
   create_rectangle_props,
-  draw_ellipse_path,
   draw_line,
-  draw_rectangle,
 } from "./shared"
 import {
   I2DCtx,
   DrawAction,
   PointProps,
   CanvasApplyStyle,
-  ShapeType,
   RectangleProps,
-  EllipsePath,
 } from "./type"
 
 import { ref } from 'vue'
@@ -29,10 +24,7 @@ export class Scene {
   private children: DrawElement[]
   private selected: DrawElement | null
   private action: DrawAction
-
   private active_props: RectangleProps | null
-  private ellipse_path: EllipsePath | null
-
   private has_down: boolean
   private down_point: PointProps | null
   private move_point: PointProps | null
@@ -40,16 +32,7 @@ export class Scene {
   private height: number
   private center: PointProps
 
-
   constructor(ctx: I2DCtx) {
-    this.children = []
-    this.selected = null
-    this.ctx = ctx
-    this.action = INITIAL_DRAW_ACTION
-
-    this.active_props = null
-    this.ellipse_path = null
-
     const { clientWidth, clientHeight } = document.documentElement
 
     const c: PointProps = { x: clientWidth / 2, y: clientHeight / 2 }
@@ -57,6 +40,11 @@ export class Scene {
     this.width = clientWidth
     this.height = clientHeight
     this.center = c
+    this.children = []
+    this.selected = null
+    this.ctx = ctx
+    this.action = INITIAL_DRAW_ACTION
+    this.active_props = null
     this.has_down = false
     this.down_point = null
     this.move_point = null
@@ -77,7 +65,7 @@ export class Scene {
     if (selIdx !== -1) {
       const selectRectangle = this.children[selIdx]
 
-      if (selectRectangle.is_focus()) {
+      if (selectRectangle.has_placement()) {
         this.action = DrawAction.Reize
 
         this.active_props = selectRectangle.getProps()
@@ -89,6 +77,13 @@ export class Scene {
 
       this.selected = selectRectangle
     } else {
+      const element = DrawElement.get_instance(
+        CORE_STATE.shape_type,
+        { x: p.x, y: p.y, w: 0, h: 0 },
+        RECTANGLE_STYLE,
+      )
+  
+      this.selected = element
       this.action = DrawAction.Create
     }
 
@@ -108,8 +103,12 @@ export class Scene {
 
     switch (this.action) {
       case DrawAction.Create:
-        this.create()
-        this.active_props = null
+        if (this.selected) {
+          this.children.push(this.selected)
+          this.selected = null
+          this.active_props = null
+          count_ref.value = this.children.length
+        }
         break
       case DrawAction.Move:
         this.active_props = null
@@ -123,19 +122,6 @@ export class Scene {
     }
   }
 
-  private create() {
-    if (!this.active_props) return
-
-    const element = DrawElement.get_instance(
-      CORE_STATE.shape_type,
-      this.active_props,
-      RECTANGLE_STYLE,
-    )
-
-    this.children.push(element)
-    count_ref.value = this.children.length
-  }
-
   public update() {
     const { down_point, move_point } = this
 
@@ -145,12 +131,12 @@ export class Scene {
 
     switch (this.action) {
       case DrawAction.Create:
-        const props = create_rectangle_props(down_point, move_point)
+        if (this.selected) {
+          const props = create_rectangle_props(down_point, move_point)
 
-        const path = create_ellipse_path(props)
-        this.ellipse_path = path
-
-        this.active_props = props
+          this.selected.update_props(props)
+          this.active_props = props
+        }
         break
       case DrawAction.Move:
         if (this.selected && this.active_props) {
@@ -177,21 +163,11 @@ export class Scene {
     this.renderGuideLines(ctx)
 
     for (const c of this.children) {
-      const focus = c === this.selected
-      c.draw(this.ctx, focus)
+      c.draw(this.ctx, c === this.selected)
     }
 
-    if (this.active_props && this.action === DrawAction.Create) {
-      
-      if (this.action === DrawAction.Create) {
-        draw_rectangle(this.ctx, this.active_props, RECTANGLE_STYLE)
-
-        if (CORE_STATE.shape_type === ShapeType.Circle) {
-          if (this.ellipse_path) {
-            draw_ellipse_path(ctx, this.ellipse_path, ELLIPSE_STYLE)
-          }
-        }
-      }
+    if (this.selected) {
+      this.selected.draw(ctx)
     }
   }
 
@@ -210,5 +186,4 @@ export class Scene {
     draw_line(ctx, center, down_point, { strokeStyle: '#ff0000' })
     draw_line(ctx, center, move_point, { strokeStyle: '#00b341' })
   }
-
 }
