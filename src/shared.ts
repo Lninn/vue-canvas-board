@@ -167,9 +167,6 @@ export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: Canva
 
   apply_canvas_style(ctx, style)
 }
-export const draw_rectangle_meta = (ctx: I2DCtx, meta: CoordsRange, style?: CanvasApplyStyle) => {
-  draw_points(ctx, meta, style)
-}
 
 export const adjust_rectangle_props = (props: RectangleProps) => {
   const { x, y, w, h } = props

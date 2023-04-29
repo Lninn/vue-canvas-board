@@ -1,8 +1,8 @@
 // import { Circle } from "./circle"
 import { CORE_STATE } from "./constant"
 import { Rectangle, RectangleProps } from "./rectangle"
-import { create_rectangle_meta_list, create_rectangle_props, draw_rectangle_meta, get_rectangle_next_size } from "./shared"
-import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, CoordsRange, ShapeType } from "./type"
+import { create_rectangle_meta_list, create_rectangle_props, draw_rectangle, get_rectangle_next_size } from "./shared"
+import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, ShapeType } from "./type"
 
 import { ref } from 'vue'
 
@@ -22,7 +22,6 @@ export class Player {
   private action: DrawAction
 
   private active_props: RectangleProps | null
-  private active_coords: CoordsRange | null
 
   constructor(ctx: I2DCtx) {
     this.children = []
@@ -31,7 +30,6 @@ export class Player {
     this.action = INITIAL_DRAW_ACTION
 
     this.active_props = null
-    this.active_coords = null
   }
 
   public on_pointer_down(p: PointProps) {
@@ -49,12 +47,10 @@ export class Player {
       if (selectRectangle.activePlacement) {
         this.action = DrawAction.Reize
 
-        this.active_coords = selectRectangle.coords
         this.active_props = selectRectangle.props
       } else {
         this.action = DrawAction.Move
 
-        this.active_coords = selectRectangle.coords
         this.active_props = selectRectangle.props
       }
 
@@ -73,32 +69,27 @@ export class Player {
 
         count_ref.value = this.children.length
 
-        this.active_coords = null
         this.active_props = null
         break
       case DrawAction.Move:
-        this.active_coords = null
         this.active_props = null
       case DrawAction.Reize:
         if (this.selected) {
           this.selected.activePlacement = null
         }
 
-        this.active_coords = null
         this.active_props = null
         break
     }
   }
 
   private create() {
-    if (this.active_props && this.active_coords) {
-
-
+    if (this.active_props) {
       if (CORE_STATE.shape_type === ShapeType.Circle) {
         // const r = new Circle({ x: this.active_props.x, y: this.active_props.y, r: 100 })
         // this.children.push(r)
       } else {
-        const r = new Rectangle(this.active_props, this.active_coords, RECTANGLE_STYLE)
+        const r = new Rectangle(this.active_props, RECTANGLE_STYLE)
         this.children.push(r)
       }
 
@@ -109,10 +100,8 @@ export class Player {
     switch (this.action) {
       case DrawAction.Create:
         const props = create_rectangle_props(down_point, move_point)
-        const meta = create_rectangle_meta_list(props)
 
         this.active_props = props
-        this.active_coords = meta
         break
       case DrawAction.Move:
         if (this.selected && this.active_props) {
@@ -127,13 +116,11 @@ export class Player {
       case DrawAction.Reize:
         if (this.selected) {
           const { activePlacement } = this.selected
-          if (!activePlacement) return
-
-          if (!this.active_coords) return
+          if (!activePlacement || !this.active_props) return
 
           const [_move, _down] = get_rectangle_next_size(
             activePlacement,
-            this.active_coords,
+            create_rectangle_meta_list(this.active_props),
             move_point,
           )
 
@@ -149,8 +136,8 @@ export class Player {
       c.draw(this.ctx, focus)
     }
 
-    if (this.active_coords && this.action === DrawAction.Create) {
-      draw_rectangle_meta(this.ctx, this.active_coords, RECTANGLE_STYLE)
+    if (this.active_props && this.action === DrawAction.Create) {
+      draw_rectangle(this.ctx, this.active_props, RECTANGLE_STYLE)
     }
   }
 }

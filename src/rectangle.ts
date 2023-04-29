@@ -2,14 +2,13 @@ import { BORDER_PADDING } from './constant'
 import {
   adjust_rectangle_props,
   create_border_rects,
-  create_rectangle_meta_list,
   create_rectangle_props,
   draw_points,
-  draw_rectangle_meta,
+  draw_rectangle,
   rectangle_intersection,
   with_padding,
 } from './shared'
-import { BorderPlacementMap, CanvasApplyStyle, CoordsRange, I2DCtx, Placement, PointProps } from './type'
+import { BorderPlacementMap, CanvasApplyStyle, I2DCtx, Placement, PointProps } from './type'
 
 import { ref } from 'vue'
 
@@ -24,16 +23,13 @@ export interface RectangleProps {
 
 export class Rectangle {
   public props: RectangleProps
-  public coords: CoordsRange
   public activePlacement: Placement | null
 
   private borderPlacement: BorderPlacementMap | null
-
   private style: CanvasApplyStyle
 
-  constructor(props: RectangleProps, coords: CoordsRange, style: CanvasApplyStyle) {
+  constructor(props: RectangleProps, style: CanvasApplyStyle) {
     this.props = props
-    this.coords = coords
     this.borderPlacement = this.createBorder()
 
     this.style = style
@@ -100,12 +96,9 @@ export class Rectangle {
   }
 
   private translate(props: RectangleProps) {
-    const coords = create_rectangle_meta_list(props)
-
     moveInfo.value = props
 
     this.props = props
-    this.coords = coords
     this.borderPlacement = this.createBorder()
   }
 
@@ -142,7 +135,7 @@ export class Rectangle {
   }
 
   public draw(ctx: I2DCtx, hasFocus?: boolean) {
-    draw_rectangle_meta(ctx, this.coords, this.style)
+    draw_rectangle(ctx, this.props, this.style)
 
     if (hasFocus) {
       this.render_border(ctx)

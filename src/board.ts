@@ -2,11 +2,10 @@ import { Player } from './player'
 import {
   draw_line,
 } from './shared'
-import { CanvasApplyStyle, CoordsRange, I2DCtx , PointProps } from './type'
+import { CanvasApplyStyle, I2DCtx , PointProps } from './type'
 
 import { ref } from 'vue'
 
-export const metaRef = ref<CoordsRange>()
 export const down_point_ref = ref<PointProps>()
 export const move_point_ref = ref<PointProps>()
 
