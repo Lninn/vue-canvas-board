@@ -1,5 +1,5 @@
 // import { Circle } from "./circle"
-import { CORE_STATE } from "./constant"
+import { CORE_STATE, RECTANGLE_STYLE } from "./constant"
 import { Rectangle, RectangleProps } from "./rectangle"
 import { create_rectangle_meta_list, create_rectangle_props, draw_line, draw_rectangle, get_rectangle_next_size } from "./shared"
 import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, ShapeType } from "./type"
@@ -8,14 +8,8 @@ import { ref } from 'vue'
 
 const INITIAL_DRAW_ACTION = DrawAction.Create
 
-export const down_point_ref = ref<PointProps>()
-export const move_point_ref = ref<PointProps>()
 export const action_ref = ref(INITIAL_DRAW_ACTION)
 export const count_ref = ref(0)
-
-const RECTANGLE_STYLE: CanvasApplyStyle = {
-  strokeStyle: '#f7a400',
-}
 
 export class Scene {
   private ctx: I2DCtx

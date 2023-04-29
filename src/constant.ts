@@ -1,10 +1,14 @@
-import { CoreState, ShapeType } from "./type"
+import { CanvasApplyStyle, CoreState, ShapeType } from "./type"
 
 export const BORDER_PADDING = 20
 
 export const BORDER_RECT_SIZE = 10
 
 export const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+export const RECTANGLE_STYLE: CanvasApplyStyle = {
+  strokeStyle: '#f7a400',
+}
 
 export let CORE_STATE: CoreState = {
   shape_type: ShapeType.RectAngle
