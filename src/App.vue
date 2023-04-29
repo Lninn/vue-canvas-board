@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
-import { action_ref, count_ref } from './player';
+import { action_ref, count_ref } from './scene';
 import { moveInfo } from './rectangle';
 import { update_state } from './constant';
 import { ShapeType } from './type'

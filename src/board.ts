@@ -1,4 +1,4 @@
-import { Player } from './player'
+import { Scene } from './scene'
 import {
   draw_line,
 } from './shared'
@@ -19,9 +19,9 @@ export class Board {
 
   private center: PointProps
 
-  private player: Player
+  private scene: Scene
 
-  constructor(player: Player) {
+  constructor(scene: Scene) {
     const { clientWidth, clientHeight } = document.documentElement
 
     const c: PointProps = { x: clientWidth / 2, y: clientHeight / 2 }
@@ -31,14 +31,14 @@ export class Board {
     this.has_down = false
     this.down_point = null
     this.move_point = null
-    this.player = player
+    this.scene = scene
   }
 
   public on_pointer_down(crtP: PointProps) {
     this.down_point = crtP
     this.has_down = true
 
-    this.player.on_pointer_down(crtP)
+    this.scene.on_pointer_down(crtP)
   }
 
   public on_move(p: PointProps) {
@@ -52,7 +52,7 @@ export class Board {
     this.down_point = null
     this.move_point = null
 
-    this.player.on_pointer_up()
+    this.scene.on_pointer_up()
   }
 
   private renderGuideLines(ctx: I2DCtx) {
@@ -74,12 +74,12 @@ export class Board {
   public update() {
     const { down_point, move_point } = this
     if (down_point && move_point) {
-      this.player.update(down_point, move_point)
+      this.scene.update(down_point, move_point)
     }
   }
 
   public draw(ctx: I2DCtx) {
     this.renderGuideLines(ctx)
-    this.player.draw()
+    this.scene.draw()
   }
 }

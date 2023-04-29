@@ -15,7 +15,7 @@ const RECTANGLE_STYLE: CanvasApplyStyle = {
   strokeStyle: '#f7a400',
 }
 
-export class Player {
+export class Scene {
   private ctx: I2DCtx
   private children: Rectangle[]
   private selected: Rectangle | null
