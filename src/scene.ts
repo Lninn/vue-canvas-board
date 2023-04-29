@@ -1,13 +1,15 @@
 // import { Circle } from "./circle"
 import { CORE_STATE } from "./constant"
 import { Rectangle, RectangleProps } from "./rectangle"
-import { create_rectangle_meta_list, create_rectangle_props, draw_rectangle, get_rectangle_next_size } from "./shared"
+import { create_rectangle_meta_list, create_rectangle_props, draw_line, draw_rectangle, get_rectangle_next_size } from "./shared"
 import { I2DCtx, DrawAction, PointProps, CanvasApplyStyle, ShapeType } from "./type"
 
 import { ref } from 'vue'
 
 const INITIAL_DRAW_ACTION = DrawAction.Create
 
+export const down_point_ref = ref<PointProps>()
+export const move_point_ref = ref<PointProps>()
 export const action_ref = ref(INITIAL_DRAW_ACTION)
 export const count_ref = ref(0)
 
@@ -23,6 +25,13 @@ export class Scene {
 
   private active_props: RectangleProps | null
 
+  private has_down: boolean
+  private down_point: PointProps | null
+  private move_point: PointProps | null
+  private width: number
+  private height: number
+  private center: PointProps
+
   constructor(ctx: I2DCtx) {
     this.children = []
     this.selected = null
@@ -30,9 +39,23 @@ export class Scene {
     this.action = INITIAL_DRAW_ACTION
 
     this.active_props = null
+
+    const { clientWidth, clientHeight } = document.documentElement
+
+    const c: PointProps = { x: clientWidth / 2, y: clientHeight / 2 }
+
+    this.width = clientWidth
+    this.height = clientHeight
+    this.center = c
+    this.has_down = false
+    this.down_point = null
+    this.move_point = null
   }
 
   public on_pointer_down(p: PointProps) {
+    this.down_point = p
+    this.has_down = true
+
     if (this.selected) {
       this.selected = null
     }
@@ -62,7 +85,17 @@ export class Scene {
     action_ref.value = this.action
   }
 
+  public on_move(p: PointProps) {
+    if (this.has_down) {
+      this.move_point = p
+    }
+  }
+
   public on_pointer_up() {
+    this.has_down = false
+    this.down_point = null
+    this.move_point = null
+
     switch (this.action) {
       case DrawAction.Create:
         this.create()
@@ -96,7 +129,13 @@ export class Scene {
     }
   }
 
-  public update(down_point: PointProps, move_point: PointProps) {
+  public update() {
+    const { down_point, move_point } = this
+
+    if (!down_point || !move_point) {
+      return
+    }
+
     switch (this.action) {
       case DrawAction.Create:
         const props = create_rectangle_props(down_point, move_point)
@@ -130,7 +169,9 @@ export class Scene {
     }
   }
 
-  public draw() {
+  public draw(ctx: I2DCtx) {
+    this.renderGuideLines(ctx)
+
     for (const c of this.children) {
       const focus = c === this.selected
       c.draw(this.ctx, focus)
@@ -140,4 +181,21 @@ export class Scene {
       draw_rectangle(this.ctx, this.active_props, RECTANGLE_STYLE)
     }
   }
+
+  private renderGuideLines(ctx: I2DCtx) {
+    const { width, height, center, down_point, move_point } = this
+
+    const style1 = { strokeStyle: 'blue' }
+    draw_line(ctx, { x: 0, y: height / 2 }, { x: width, y: height / 2 }, style1)
+    draw_line(ctx, { x: width / 2, y: 0 }, { x: width / 2, y: height }, style1)
+
+    if (!down_point || !move_point) return
+
+    const style: CanvasApplyStyle = { strokeStyle: '#0040ff' }
+    draw_line(ctx, down_point, move_point, style)
+
+    draw_line(ctx, center, down_point, { strokeStyle: '#ff0000' })
+    draw_line(ctx, center, move_point, { strokeStyle: '#00b341' })
+  }
+
 }
