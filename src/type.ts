@@ -37,3 +37,11 @@ export const enum Placement {
 
   Left = 'Left',
 }
+
+export const enum DrawAction {
+  Create = '建造模式',
+  Move = '移动位置',
+  Reize = '改变大小',
+}
+
+export type CoordsRange = [PointProps, PointProps, PointProps, PointProps]

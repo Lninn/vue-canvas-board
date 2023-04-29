@@ -1,6 +1,6 @@
 import { BORDER_PADDING } from './constant'
-import { MetaList, Rectangle, RectangleProps } from './rectangle'
-import { CanvasApplyStyle, Placement, I2DCtx, PointProps } from './type'
+import { RectangleProps } from './rectangle'
+import { CanvasApplyStyle, Placement, I2DCtx, PointProps, CoordsRange } from './type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING
@@ -145,11 +145,9 @@ export const apply_canvas_style = (ctx: I2DCtx, style?: CanvasApplyStyle) => {
   }
 }
 export const create_rectangle_props = (
-  down_point: PointProps | null,
-  move_point: PointProps | null,
+  down_point: PointProps,
+  move_point: PointProps,
 ) => {
-  if (!down_point || !move_point) return null
-
   const sizeOfHorizontal = move_point.x - down_point.x
   const sizeOfVertical = move_point.y - down_point.y
 
@@ -169,7 +167,7 @@ export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: Canva
 
   apply_canvas_style(ctx, style)
 }
-export const draw_rectangle_meta = (ctx: I2DCtx, meta: MetaList, style?: CanvasApplyStyle) => {
+export const draw_rectangle_meta = (ctx: I2DCtx, meta: CoordsRange, style?: CanvasApplyStyle) => {
   draw_points(ctx, meta, style)
 }
 
@@ -189,44 +187,40 @@ export const adjust_rectangle_props = (props: RectangleProps) => {
   return finalProps
 }
 
-export const mutate_rectangle_size = (rectangle: Rectangle, move_point: PointProps | null) => {
-  if (!move_point) return
-
-  const { placement, meta } = rectangle.get_meta_and_placement()
-
+export const get_rectangle_next_size = (
+  placement: Placement,
+  meta: CoordsRange,
+  move_point: PointProps
+): [PointProps, PointProps] => {
   const [p1, p2, p3, p4] = meta
 
   switch (placement) {
     case Placement.TopLeft:
     case Placement.LeftTop:
-      rectangle.on_size(move_point, p3)
-      break
+      return [move_point, p3]
 
     case Placement.Top:
-      break
+      return [{ x: p1.x, y: move_point.y }, p3]
 
     case Placement.TopRight:
     case Placement.RightTop:
-      rectangle.on_size(move_point, p4)
-      break
+      return [move_point, p4]
 
     case Placement.Right:
-      break
+      return [{ x: move_point.x, y: p3.y }, p1]
 
     case Placement.BottomRight:
     case Placement.RightBottom:
-      rectangle.on_size(move_point, p1)
-      break
+      return [move_point, p1]
 
     case Placement.Bottom:
-      break
+      return [{ x: p3.x, y: move_point.y }, p1]
 
     case Placement.BottomLeft:
     case Placement.LeftBottom:
-      rectangle.on_size(move_point, p2)
-      break
+      return [move_point, p2]
 
     case Placement.Left:
-      break
+      return [{ x: move_point.x, y: p1.y }, p3]
   }
 }

@@ -7,7 +7,11 @@ import {
   rectangle_intersection,
   with_padding,
 } from './shared'
-import { CanvasApplyStyle, I2DCtx, Placement, PointProps } from './type'
+import { CanvasApplyStyle, CoordsRange, I2DCtx, Placement, PointProps } from './type'
+
+import { ref } from 'vue'
+
+export const moveInfo = ref<any>()
 
 type BorderPlacementMap = Record<Placement, PointProps[]>
 
@@ -78,13 +82,11 @@ export interface RectangleProps {
   h: number
 }
 
-export type MetaList = [PointProps, PointProps, PointProps, PointProps]
-
 export const is_rectangle = (obj: any): obj is Rectangle => {
   return obj && 'type' in obj && obj['type'] === 'rectangle'
 }
 
-export const create_rectangle_meta_list = (props: RectangleProps): MetaList => {
+export const create_rectangle_meta_list = (props: RectangleProps): CoordsRange => {
   const { x, y, w, h } = props
 
   return [
@@ -98,17 +100,16 @@ export const create_rectangle_meta_list = (props: RectangleProps): MetaList => {
 export class Rectangle {
   public typp = 'rectangle'
   public props: RectangleProps
-  private hasFocus = false
-  private meta: MetaList
+  public coords: CoordsRange
+  public activePlacement: Placement | null
 
   private borderPlacement: BorderPlacementMap | null
-  private activePlacement: Placement | null
 
   private style: CanvasApplyStyle
 
-  constructor(props: RectangleProps, style: CanvasApplyStyle) {
+  constructor(props: RectangleProps, coords: CoordsRange, style: CanvasApplyStyle) {
     this.props = props
-    this.meta = create_rectangle_meta_list(props)
+    this.coords = coords
 
     this.activePlacement = null
     this.borderPlacement = this.createBorder()
@@ -159,24 +160,7 @@ export class Rectangle {
     return null
   }
 
-  public get_meta_and_placement() {
-    const { activePlacement, meta } = this
-    return { placement: activePlacement, meta }
-  }
-
-  public focus_toggle(val: boolean) {
-    this.hasFocus = val
-  }
-
-  public reset() {
-    this.activePlacement = null
-  }
-
-  public has_placement() {
-    return !!this.activePlacement
-  }
-
-  public hasInteracion(p: PointProps) {
+  public check_intersect(p: PointProps) {
     const placement = this.get_placement_border_if_match(p)
 
     if (placement) {
@@ -190,34 +174,30 @@ export class Rectangle {
 
     return intersectionInRect
   }
-  public on_size(down_point: PointProps | null, move_point: PointProps | null) {
-    if (!down_point || !move_point) {
-      return
-    }
-
-    const props = create_rectangle_props(down_point, move_point)
-    if (!props) return
-
+  public on_size(move_point: PointProps, down_point: PointProps) {
+    const props = create_rectangle_props(move_point, down_point)
     const meta = create_rectangle_meta_list(props)
-    this.props = props
-    this.meta = meta
-  }
-  public on_move(down_point: PointProps | null, move_point: PointProps | null) {
-    if (!down_point || !move_point) {
-      return
-    }
 
+    this.props = props
+    this.coords = meta
+    this.borderPlacement = this.createBorder()
+  }
+  public on_move(down_point: PointProps, move_point: PointProps) {
     const xOffset = move_point.x - down_point.x
     const yOffset = move_point.y - down_point.y
 
     const props = { ...this.props, x: xOffset, y: yOffset }
 
     const meta = create_rectangle_meta_list(props)
+
+    moveInfo.value = props
+
     this.props = props
-    this.meta = meta
+    this.coords = meta
+    this.borderPlacement = this.createBorder()
   }
 
-  private renderBorder(ctx: CanvasRenderingContext2D) {
+  private render_border(ctx: CanvasRenderingContext2D) {
     const map = this.borderPlacement
     if (!map) return
 
@@ -235,17 +215,11 @@ export class Rectangle {
     }
   }
 
-  public update() {
-    if (this.hasFocus) {
-      this.borderPlacement = this.createBorder()
-    }
-  }
+  public draw(ctx: I2DCtx, hasFocus?: boolean) {
+    draw_rectangle_meta(ctx, this.coords, this.style)
 
-  public draw(ctx: I2DCtx) {
-    draw_rectangle_meta(ctx, this.meta, this.style)
-
-    if (this.hasFocus) {
-      this.renderBorder(ctx)
+    if (hasFocus) {
+      this.render_border(ctx)
     }
   }
 }

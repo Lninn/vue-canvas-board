@@ -5,6 +5,7 @@ import { create_canvas } from './shared'
 import { PointProps } from './type'
 import { IS_MOBILE } from './constant'
 import setup from './app-setup'
+import { Player } from './player'
 
 function main() {
   const payload = create_canvas()
@@ -12,7 +13,8 @@ function main() {
 
   const { canvas, ctx } = payload
 
-  const board = new Board()
+  const player = new Player(ctx)
+  const board = new Board(player)
 
   const clear = () => {
     const { width, height } = canvas
