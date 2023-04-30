@@ -1,5 +1,11 @@
 import { BORDER_PADDING } from './store'
-import { CanvasApplyStyle, I2DCtx, PointProps, RectangleProps, EllipsePath } from './type'
+import {
+  CanvasApplyStyle,
+  I2DCtx,
+  PointProps,
+  RectangleProps,
+  EllipsePath,
+} from './type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING

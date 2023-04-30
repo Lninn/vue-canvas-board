@@ -3,7 +3,7 @@
     <Option
       v-for="opt in options"
       :opt="opt"
-      :isActive="opt.value === modelValue.value"
+      :isActive="opt.value === modelValue"
       @click="emit('update:modelValue', $event)"
     />
 	</div>
@@ -14,7 +14,7 @@ import Option, { IXXXOption } from './Option.vue'
 
 interface IProps {
   options: IXXXOption[]
-  modelValue: IXXXOption
+  modelValue: IXXXOption['value']
 }
 
 defineProps<IProps>()

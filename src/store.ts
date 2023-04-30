@@ -38,8 +38,8 @@ interface IState {
 }
 
 const intial_state: IState = {
-  active_action: DrawAction.Auto,
-  shape_type:  ShapeType.Select,
+  active_action: DrawAction.Create,
+  shape_type: ShapeType.Rectangle,
   shape_count: 0,
 }
 
@@ -102,11 +102,9 @@ export const current_scene_state = new SceneState(
   intial_state.shape_type,
 )
 
-export const activeOpt = ref(TOOL_PANEL_OPTS[0])
+export const activeOpt = ref(intial_state.shape_type)
 watchEffect(() => {
-  const { value: { value } } = activeOpt
-
-  switch (value) {
+  switch (activeOpt.value) {
     case ShapeType.Select:
       current_scene_state.update_state({
         active_action: DrawAction.Auto,

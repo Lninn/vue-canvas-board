@@ -17,7 +17,7 @@ const emit = defineEmits(['click'])
 <template>
   <div
     :class="clsx('xxx-opt', { 'is-active': isActive, })"
-    @click="emit('click', opt)"
+    @click="emit('click', opt.value)"
   >
     {{ opt.label }}
   </div>
@@ -25,7 +25,6 @@ const emit = defineEmits(['click'])
 
 <style lang="less">
 .xxx-opt {
-  font-size: 12px;
   color: rgba(0, 0, 0, 0.65);
   background-color: #fff;
   padding: 4px 8px;

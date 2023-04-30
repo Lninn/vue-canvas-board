@@ -35,7 +35,7 @@ const handleKeyDown = (ev: KeyboardEvent) => {
   }
 
   if (active_opt) {
-    activeOpt.value = active_opt
+    activeOpt.value = active_opt.value
   }
 }
 onMounted(() => {
