@@ -1,6 +1,6 @@
 <template>
   <div class="xxx-label-pair">
-    <div>{{ label }}</div>
+    <div class="xxx-label-pair__label">{{ label }}</div>
     <div>{{ desc }}</div>
   </div>
 </template>
@@ -17,5 +17,9 @@ defineProps<Props>()
 .xxx-label-pair {
   display: flex;
   gap: 8px;
+
+  &__label {
+    color: rgba(255, 255, 255, 0.65);
+  }
 }
 </style>

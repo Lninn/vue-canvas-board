@@ -29,6 +29,7 @@ const emit = defineEmits(['click'])
   background-color: #fff;
   padding: 4px 8px;
   border-radius: 4px;
+
   cursor: pointer;
 
   &.is-active {
