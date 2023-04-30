@@ -26,7 +26,7 @@ const border_padding = ref(20)
 const border_size = ref(10)
 const rectangle_style = ref('#f7a400')
 const grid_style = ref('#f7a400')
-const grid_visible = ref(false)
+const grid_visible = ref(true)
 
 const handleKeyDown = (ev: KeyboardEvent) => {
   let active_opt

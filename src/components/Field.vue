@@ -1,32 +1,49 @@
 <template>
   <div class="xxx-field">
     <span>{{ label }}</span>
-    <input :value="modelValue" :type="type" @input="on_input" />
+    <component :is="input_node"/>
     <span class="xxx-field-value">{{ modelValue }}</span>
   </div>
 </template>
 
 <script lang="ts" setup>
+import { h } from 'vue'
+
 interface IProps {
   type: 'range' | 'color' | 'checkbox'
   label: string
   modelValue: string | number | boolean
 }
-const { type } = defineProps<IProps>()
+const { type, modelValue } = defineProps<IProps>()
 const emit = defineEmits(['update:modelValue'])
-const on_input = (e: Event) => {
-  if (!e.target) return
 
-  const el = e.target as HTMLInputElement
-
+const parse = (element: HTMLInputElement) => {
   if (type === 'range') {
-    emit('update:modelValue', parseInt(el.value))
-  } else if (type === 'color') {
-    emit('update:modelValue', el.value)
+    return parseInt(element.value)
+  } else if (type === 'checkbox') {
+    return element.checked
   } else {
-    emit('update:modelValue', el.checked)
+    return element.value
   }
 }
+
+const onInput = (e: Event) => {
+  if (!e.target) return
+  const el = e.target as HTMLInputElement
+  emit('update:modelValue', parse(el))
+}
+
+const props = Object.assign(
+  {
+    type,
+    onInput,
+  },
+  type === 'checkbox' ? { checked: modelValue } : { value: modelValue }
+)
+const input_node = h(
+  'input',
+  props,
+)
 </script>
 
 <style lang="less">
