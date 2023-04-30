@@ -1,6 +1,6 @@
 import { BORDER_PADDING, BORDER_RECT_SIZE } from "./store"
 import { draw_points, rectangle_intersection, with_padding } from "./shared"
-import { CanvasApplyStyle, I2DCtx, Placement, PointProps, RectangleProps } from "./type"
+import { CanvasApplyStyle, I2DCtx, Placement, PointProps, RectangleProps } from "../type"
 
 export type PlacementPointsMap = Record<Placement, PointProps[]>
 

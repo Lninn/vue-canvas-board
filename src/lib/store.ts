@@ -1,5 +1,5 @@
-import { CanvasApplyStyle, DrawAction, ShapeType } from "./type"
-import { IXXXOption } from "./components"
+import { CanvasApplyStyle, DrawAction, ShapeType } from "../type"
+import { IXXXOption } from "../components"
 import { ref, watchEffect } from "vue"
 
 export const BORDER_PADDING = 20

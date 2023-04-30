@@ -6,7 +6,7 @@ import {
   PointProps,
   RectangleProps,
   ShapeType,
-} from './type'
+} from '../type'
 import { Border } from './border';
 import {
   create_ellipse_path,

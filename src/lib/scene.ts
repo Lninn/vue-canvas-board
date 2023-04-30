@@ -14,7 +14,7 @@ import {
   CanvasApplyStyle,
   RectangleProps,
   ShapeType,
-} from "./type"
+} from "../type"
 
 export class Scene {
   private ctx: I2DCtx

@@ -1,5 +1,5 @@
 <template>
-  <canvas id="canvas"></canvas>
+  <canvas id="canvas" />
 
   <div>
     <Panel>
@@ -12,9 +12,9 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue';
-import { main } from './app'
-import { TOOL_PANEL_OPTS, activeOpt, state_ref } from './store'
+import { TOOL_PANEL_OPTS, activeOpt, state_ref } from './lib/store'
 import { LabePair, Panel, OptionList } from './components'
+import { main } from './lib'
 import { ShapeType } from './type';
 
 const handleKeyDown = (ev: KeyboardEvent) => {

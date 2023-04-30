@@ -1,7 +1,5 @@
-import './style.css'
-
 import { create_canvas } from './shared'
-import { PointProps } from './type'
+import { PointProps } from '../type'
 import { IS_MOBILE } from './store'
 import { Scene } from './scene'
 

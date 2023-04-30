@@ -5,7 +5,7 @@ import {
   PointProps,
   RectangleProps,
   EllipsePath,
-} from './type'
+} from '../type'
 
 export const with_padding = (points: PointProps[]) => {
   const p = BORDER_PADDING
