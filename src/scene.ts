@@ -1,4 +1,7 @@
-import { scene_state, RECTANGLE_STYLE } from "./store"
+import {
+  RECTANGLE_STYLE,
+  current_scene_state,
+} from "./store"
 import { DrawElement } from "./element"
 import {
   create_rectangle_props,
@@ -10,11 +13,8 @@ import {
   PointProps,
   CanvasApplyStyle,
   RectangleProps,
+  ShapeType,
 } from "./type"
-
-import { ref } from 'vue'
-
-export const count_ref = ref(0)
 
 export class Scene {
   private ctx: I2DCtx
@@ -53,7 +53,9 @@ export class Scene {
       }
 
       this.selected = null
-      count_ref.value = this.children.length
+      current_scene_state.update_state({
+        shape_count: this.children.length,
+      })
     }
   }
 
@@ -73,26 +75,29 @@ export class Scene {
       const selectRectangle = this.children[selIdx]
 
       if (selectRectangle.has_placement()) {
-        scene_state.active_action = DrawAction.Reize
+        current_scene_state.update_state({ active_action: DrawAction.Reize })
 
         this.active_props = selectRectangle.getProps()
       } else {
-        scene_state.active_action = DrawAction.Move
+        current_scene_state.update_state({ active_action: DrawAction.Move })
 
         this.active_props = selectRectangle.getProps()
       }
 
       this.selected = selectRectangle
     } else {
+      if (current_scene_state.get_shape_type() !== ShapeType.Select) {
+        const element = DrawElement.get_instance(
+          current_scene_state.get_shape_type(),
+          { x: p.x, y: p.y, w: 0, h: 0 },
+          RECTANGLE_STYLE,
+        )
+  
+        this.selected = element
+        current_scene_state.update_state({ active_action: DrawAction.Create })
+      } else {
 
-      const element = DrawElement.get_instance(
-        scene_state.shape_type,
-        { x: p.x, y: p.y, w: 0, h: 0 },
-        RECTANGLE_STYLE,
-      )
-
-      this.selected = element
-      // scene_state.active_action = DrawAction.Create
+      }
     }
   }
 
@@ -107,12 +112,14 @@ export class Scene {
     this.down_point = null
     this.move_point = null
 
-    switch (scene_state.active_action) {
+    switch (current_scene_state.get_action()) {
       case DrawAction.Create:
         if (this.selected) {
           if (this.selected.is_valid()) {
             this.children.push(this.selected)
-            count_ref.value = this.children.length
+            current_scene_state.update_state({
+              shape_count: this.children.length,
+            })
           } else {
             //
           }
@@ -137,7 +144,7 @@ export class Scene {
     const { down_point, move_point } = this
     if (!down_point || !move_point) return
 
-    switch (scene_state.active_action) {
+    switch (current_scene_state.get_action()) {
       case DrawAction.Create:
         if (this.selected) {
           const props = create_rectangle_props(down_point, move_point)
@@ -168,7 +175,7 @@ export class Scene {
   }
 
   public draw(ctx: I2DCtx) {
-    if (scene_state.center_line_visible) {
+    if (current_scene_state.config.center_line_visible) {
       this.renderGuideLines(ctx)
     }
 
@@ -180,11 +187,11 @@ export class Scene {
       this.selected.draw(ctx)
     }
 
-    if (scene_state.grid.visible) {
+    if (current_scene_state.config.grid.visible) {
       this.draw_grid(ctx)
     }
 
-    if (scene_state.cross_area_visile) {
+    if (current_scene_state.config.cross_area_visile) {
       this.draw_cross(ctx)
     }
   }
@@ -206,7 +213,7 @@ export class Scene {
   }
 
   private draw_grid(ctx: I2DCtx) {
-    const { horiztal_size, vertical_size } = scene_state.grid
+    const { horiztal_size, vertical_size } = current_scene_state.config.grid
 
     for (let i = 1; i < this.width / horiztal_size; i++) {
       draw_line(

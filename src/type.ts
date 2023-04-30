@@ -39,24 +39,9 @@ export const enum DrawAction {
 export type CoordsRange = [PointProps, PointProps, PointProps, PointProps]
 
 export const enum ShapeType {
-  None = 'none',
+  Select = 'select',
   Rectangle = 'rectangle',
   Circle = 'circle',
-}
-
-export interface ISceneState {
-  active_action: DrawAction
-  shape_type: ShapeType
-  center_line_visible: boolean
-  grid: {
-    visible: boolean
-    horiztal_size: number
-    vertical_size: number
-  }
-  /**
-   * draw a rectangle of both down and move point
-   */
-  cross_area_visile: boolean
 }
 
 export interface RectangleProps {
