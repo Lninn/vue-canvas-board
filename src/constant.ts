@@ -1,4 +1,5 @@
-import { CanvasApplyStyle, CoreState, ShapeType } from "./type"
+import { ref, watchEffect } from "vue"
+import { CanvasApplyStyle, ISceneState, ShapeType } from "./type"
 
 export const BORDER_PADDING = 20
 
@@ -15,13 +16,17 @@ export const ELLIPSE_STYLE: CanvasApplyStyle = {
 
 export const INITIAL_SHAPE_TYPE = ShapeType.Rectangle
 
-export let CORE_STATE: CoreState = {
-  shape_type: INITIAL_SHAPE_TYPE
-}
-
-export const update_state = (part_state: Partial<CoreState>) => {
-  CORE_STATE = {
-    ...CORE_STATE,
-    ...part_state,
+export const SCENE_STATE: ISceneState = {
+  shape_type: INITIAL_SHAPE_TYPE,
+  center_line_visible: true,
+  grid: {
+    visible: false,
+    horiztal_size: BORDER_RECT_SIZE * 5,
+    vertical_size: BORDER_RECT_SIZE * 5,
   }
 }
+
+export const current_type_ref = ref(INITIAL_SHAPE_TYPE)
+watchEffect(() => {
+  SCENE_STATE.shape_type = current_type_ref.value
+})

@@ -44,8 +44,14 @@ export const enum ShapeType {
   Circle = 'circle',
 }
 
-export interface CoreState {
+export interface ISceneState {
   shape_type: ShapeType
+  center_line_visible: boolean
+  grid: {
+    visible: boolean
+    horiztal_size: number
+    vertical_size: number
+  }
 }
 
 export interface RectangleProps {

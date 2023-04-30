@@ -4,7 +4,7 @@
       <div>{{ action_ref }}</div>
       <div>count {{ count_ref }}</div>
       <div>
-        <select v-model="type">
+        <select v-model="current_type_ref">
           <option>rectangle</option>
           <option>circle</option>
         </select>
@@ -14,16 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue';
 import { action_ref, count_ref } from './scene';
-import { INITIAL_SHAPE_TYPE, update_state } from './constant';
-import { ShapeType } from './type'
-
-const type = ref(INITIAL_SHAPE_TYPE)
-
-watchEffect(() => {
-  update_state({ shape_type: type.value as unknown as ShapeType })
-})
+import { current_type_ref} from './constant';
 </script>
 
 <style lang="less">

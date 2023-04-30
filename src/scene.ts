@@ -1,4 +1,4 @@
-import { CORE_STATE, RECTANGLE_STYLE } from "./constant"
+import { SCENE_STATE, RECTANGLE_STYLE } from "./constant"
 import { DrawElement } from "./element"
 import {
   create_rectangle_props,
@@ -50,6 +50,18 @@ export class Scene {
     this.move_point = null
   }
 
+  public remove_active_child() {
+    if (this.selected) {
+      const idx = this.children.findIndex(c => c === this.selected)
+      if (idx !== -1) {
+        this.children.splice(idx, 1)
+      }
+
+      this.selected = null
+      count_ref.value = this.children.length
+    }
+  }
+
   public on_pointer_down(p: PointProps) {
     this.down_point = p
     this.has_down = true
@@ -78,7 +90,7 @@ export class Scene {
       this.selected = selectRectangle
     } else {
       const element = DrawElement.get_instance(
-        CORE_STATE.shape_type,
+        SCENE_STATE.shape_type,
         { x: p.x, y: p.y, w: 0, h: 0 },
         RECTANGLE_STYLE,
       )
@@ -162,7 +174,9 @@ export class Scene {
   }
 
   public draw(ctx: I2DCtx) {
-    this.renderGuideLines(ctx)
+    if (SCENE_STATE.center_line_visible) {
+      this.renderGuideLines(ctx)
+    }
 
     for (const c of this.children) {
       c.draw(this.ctx, c === this.selected)
@@ -170,6 +184,10 @@ export class Scene {
 
     if (this.selected) {
       this.selected.draw(ctx)
+    }
+
+    if (SCENE_STATE.grid.visible) {
+      this.draw_grid(ctx)
     }
   }
 
@@ -187,5 +205,27 @@ export class Scene {
 
     draw_line(ctx, center, down_point, { strokeStyle: '#ff0000' })
     draw_line(ctx, center, move_point, { strokeStyle: '#00b341' })
+  }
+
+  private draw_grid(ctx: I2DCtx) {
+    const { horiztal_size, vertical_size } = SCENE_STATE.grid
+
+    for (let i = 1; i < this.width / horiztal_size; i++) {
+      draw_line(
+        ctx,
+        { x: i * horiztal_size, y: 0 },
+        { x: i * horiztal_size, y: this.height },
+        { strokeStyle: '#00b341' },
+      )
+    }
+
+    for (let i = 1; i < this.height / vertical_size; i++) {
+      draw_line(
+        ctx,
+        { x: 0, y: i * vertical_size },
+        { x: this.width, y: i * vertical_size },
+        { strokeStyle: '#00b341' },
+      )
+    }
   }
 }

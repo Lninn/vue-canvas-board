@@ -1,8 +1,8 @@
 import './style.css'
 
 import { create_canvas } from './shared'
-import { PointProps } from './type'
-import { IS_MOBILE } from './constant'
+import { PointProps, ShapeType } from './type'
+import { IS_MOBILE, current_type_ref } from './constant'
 import setup from './app-setup'
 import { Scene } from './scene'
 
@@ -79,6 +79,16 @@ const bind_event = (canvas: HTMLCanvasElement, scene: Scene) => {
     scene.on_pointer_up()
   }
 
+  const handleKeyDown = (ev: KeyboardEvent) => {
+    if (ev.key === 'Backspace' || ev.key === 'd') {
+      scene.remove_active_child ()
+    } else if (ev.key === 'c') {
+      current_type_ref.value = ShapeType.Circle
+    } else if (ev.key === 'r') {
+      current_type_ref.value = ShapeType.Rectangle
+    }
+  }
+
   if (IS_MOBILE) {
     canvas.addEventListener('touchstart', handleTouchStart)
     canvas.addEventListener('touchmove', handleTouchMove)
@@ -88,6 +98,8 @@ const bind_event = (canvas: HTMLCanvasElement, scene: Scene) => {
     canvas.addEventListener('mousemove', handleMouseMove)
     canvas.addEventListener('mouseup', handleMouseUp)
   }
+
+  window.addEventListener('keydown', handleKeyDown)
 }
 
 setup()
