@@ -6,10 +6,11 @@
       <LabePair label="数量" :desc="state_ref.shape_count" />
       <LabePair label="模式" :desc="state_ref.active_action" />
       <OptionList :options="TOOL_PANEL_OPTS" v-model="activeOpt" />
-
       <Field type='range' label="border padding" v-model="border_padding" />
       <Field type="range" label="border size" v-model="border_size" />
       <Field type="color" label="rectangle strokeStyle" v-model="rectangle_style" />
+      <Field type="color" label="grid style" v-model="grid_style" />
+      <Field type="checkbox" label="grid visible" v-model="grid_visible" />
     </Panel>
   </div>
 </template>
@@ -21,9 +22,11 @@ import { LabePair, Panel, OptionList, Field } from './components'
 import { main } from './lib'
 import { ShapeType } from './type';
 
-const border_padding = ref('20')
-const border_size = ref('10')
+const border_padding = ref(20)
+const border_size = ref(10)
 const rectangle_style = ref('#f7a400')
+const grid_style = ref('#f7a400')
+const grid_visible = ref(false)
 
 const handleKeyDown = (ev: KeyboardEvent) => {
   let active_opt
