@@ -96,6 +96,12 @@ export class DrawElement {
     return this.props.w > 0 && this.props.h > 0
   }
 
+  public update_props(props: RectangleProps) {
+    this.coords.update_props(props)
+    this.path = this.create_path(props)
+    this.border.update(this.coords.get_relative_props())
+  }
+
   public on_move(down_point: PointProps, move_point: PointProps) {
     const xOffset = move_point.x - down_point.x
     const yOffset = move_point.y - down_point.y
@@ -118,12 +124,6 @@ export class DrawElement {
 
     const props = create_rectangle_props(_move, _down)
     this.update_props(props)
-  }
-
-  public update_props(props: RectangleProps) {
-    this.coords.update_props(props)
-    this.path = this.create_path(props)
-    this.border.update(this.coords.get_relative_props())
   }
 
   private create_path (props: RectangleProps) {

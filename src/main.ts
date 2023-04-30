@@ -2,7 +2,7 @@ import './style.css'
 
 import { create_canvas } from './shared'
 import { PointProps, ShapeType } from './type'
-import { IS_MOBILE, current_type_ref } from './constant'
+import { IS_MOBILE, update_scene_state } from './store'
 import setup from './app-setup'
 import { Scene } from './scene'
 
@@ -83,9 +83,9 @@ const bind_event = (canvas: HTMLCanvasElement, scene: Scene) => {
     if (ev.key === 'Backspace' || ev.key === 'd') {
       scene.remove_active_child ()
     } else if (ev.key === 'c') {
-      current_type_ref.value = ShapeType.Circle
+      update_scene_state({ shape_type: ShapeType.Circle })
     } else if (ev.key === 'r') {
-      current_type_ref.value = ShapeType.Rectangle
+      update_scene_state({ shape_type: ShapeType.Rectangle })
     }
   }
 

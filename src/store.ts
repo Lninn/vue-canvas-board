@@ -1,5 +1,5 @@
 import { ref, watchEffect } from "vue"
-import { CanvasApplyStyle, ISceneState, ShapeType } from "./type"
+import { CanvasApplyStyle, DrawAction, ISceneState, ShapeType } from "./type"
 
 export const BORDER_PADDING = 20
 
@@ -14,19 +14,21 @@ export const ELLIPSE_STYLE: CanvasApplyStyle = {
   strokeStyle: 'blue',
 }
 
-export const INITIAL_SHAPE_TYPE = ShapeType.Rectangle
+const INITIAL_SHAPE_TYPE = ShapeType.None
 
-export const SCENE_STATE: ISceneState = {
+export const scene_state: ISceneState = {
+  active_action: DrawAction.Auto,
   shape_type: INITIAL_SHAPE_TYPE,
-  center_line_visible: true,
+  center_line_visible: false,
   grid: {
     visible: false,
     horiztal_size: BORDER_RECT_SIZE * 5,
     vertical_size: BORDER_RECT_SIZE * 5,
-  }
+  },
+  cross_area_visile: true,
 }
 
-export const current_type_ref = ref(INITIAL_SHAPE_TYPE)
-watchEffect(() => {
-  SCENE_STATE.shape_type = current_type_ref.value
-})
+export const update_scene_state = (ps: Partial<ISceneState>) => {
+  Object.assign(scene_state, ps)
+}
+

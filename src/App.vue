@@ -1,21 +1,30 @@
 <template>
   <div class="tool">
     <div class="tool-inner">
-      <div>{{ action_ref }}</div>
       <div>count {{ count_ref }}</div>
       <div>
-        <select v-model="current_type_ref">
-          <option>rectangle</option>
-          <option>circle</option>
-        </select>
+        <button @click="on_select('none')">Auo</button>
+        <button @click="on_select('circle')">Circle</button>
+        <button @click="on_select('rectangle')">Rectangle</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { action_ref, count_ref } from './scene';
-import { current_type_ref} from './constant';
+import { count_ref } from './scene';
+import { update_scene_state } from './store';
+import { DrawAction, ShapeType } from './type'
+
+const on_select = (k: string) => {
+  if (k === 'none') {
+    update_scene_state({ active_action: DrawAction.Auto, shape_type: ShapeType.None })
+  } else if (k === 'circle') {
+    update_scene_state({ active_action: DrawAction.Create, shape_type: ShapeType.Circle })
+  } else if (k === 'rectangle') {
+    update_scene_state({ active_action: DrawAction.Create, shape_type: ShapeType.Rectangle })
+  }
+}
 </script>
 
 <style lang="less">
