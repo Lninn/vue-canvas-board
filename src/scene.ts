@@ -104,10 +104,15 @@ export class Scene {
     switch (this.action) {
       case DrawAction.Create:
         if (this.selected) {
-          this.children.push(this.selected)
+          if (this.selected.is_valid()) {
+            this.children.push(this.selected)
+            count_ref.value = this.children.length
+          } else {
+            //
+          }
+
           this.selected = null
           this.active_props = null
-          count_ref.value = this.children.length
         }
         break
       case DrawAction.Move:
@@ -124,10 +129,7 @@ export class Scene {
 
   public update() {
     const { down_point, move_point } = this
-
-    if (!down_point || !move_point) {
-      return
-    }
+    if (!down_point || !move_point) return
 
     switch (this.action) {
       case DrawAction.Create:

@@ -1,5 +1,5 @@
 import { BORDER_PADDING, BORDER_RECT_SIZE } from "./constant"
-import { adjust_rectangle_props, draw_points, rectangle_intersection, with_padding } from "./shared"
+import { draw_points, rectangle_intersection, with_padding } from "./shared"
 import { CanvasApplyStyle, I2DCtx, Placement, PointProps, RectangleProps } from "./type"
 
 export type PlacementPointsMap = Record<Placement, PointProps[]>
@@ -51,7 +51,7 @@ export class Border {
   }
 
   private createMap(props: RectangleProps): PlacementPointsMap {
-    const { x, y, w, h } = adjust_rectangle_props(props)
+    const { x, y, w, h } = props
 
     const outerPoints: PointProps[] = [
       { x: x, y: y },
@@ -63,63 +63,81 @@ export class Border {
     const paddingPoints = with_padding(outerPoints)
 
     const borderPlacement = this.create_border_rects(
-      adjust_rectangle_props(props),
+      props,
       paddingPoints,
     )
 
     return borderPlacement
   }
 
-  private create_border_rects = (props: RectangleProps, cornerPoints: PointProps[]) => {
-    const { x, y, w, h } = props
-  
+  private create_border_rects = (
+    props: RectangleProps,
+    cornerPoints: PointProps[]
+  ): PlacementPointsMap => {
+    return {
+      ...this.create_corner_part(cornerPoints),
+      ...this.create_center_part(props),
+    } as PlacementPointsMap
+  }
+
+  private create_corner_part(
+    cornerPoints: PointProps[]
+  ): Partial<PlacementPointsMap> {
     const [p1, p2, p3, p4] = cornerPoints
-  
-    const c1: PointProps = { x: x + w / 2, y: y - BORDER_PADDING }
-    const c2: PointProps = { x: x + w + BORDER_PADDING, y: y + h / 2 }
-    const c3: PointProps = { x: x + w / 2, y: y + h + BORDER_PADDING }
-    const c4: PointProps = { x: x - BORDER_PADDING, y: y + h / 2 }
-  
+
     const tl = this.with_border_rect(p1)
     const tr = this.with_border_rect(p2)
     const br = this.with_border_rect(p3)
     const bl = this.with_border_rect(p4)
-  
-    const map: PlacementPointsMap = {
+
+    return {
       TopLeft: tl,
       LeftTop: tl,
-  
-      Top: this.with_border_rect(c1),
-  
+
       TopRight: tr,
       RightTop: tr,
   
-      Right: this.with_border_rect(c2),
-  
       RightBottom: br,
       BottomRight: br,
-  
-      Bottom: this.with_border_rect(c3),
-  
+   
       BottomLeft: bl,
       LeftBottom: bl,
-  
-      Left: this.with_border_rect(c4),
     }
-  
-    return map
+  }
+
+  private create_center_part(
+    props: RectangleProps
+  ): Partial<PlacementPointsMap> {
+    const { x, y, w, h } = props
+
+    const c1: PointProps = { x: x + w / 2, y: y - BORDER_PADDING }
+    const c2: PointProps = { x: x + w + BORDER_PADDING, y: y + h / 2 }
+    const c3: PointProps = { x: x + w / 2, y: y + h + BORDER_PADDING }
+    const c4: PointProps = { x: x - BORDER_PADDING, y: y + h / 2 }
+
+    const t = this.with_border_rect(c1)
+    const r = this.with_border_rect(c2)
+    const b = this.with_border_rect(c3)
+    const l = this.with_border_rect(c4)
+
+    return {
+      Top: t,
+      Right: r,
+      Bottom: b,
+      Left: l,
+    }
   }
 
   private with_border_rect (point: PointProps) {
     const size = BORDER_RECT_SIZE
-  
+
     const ps: PointProps[] = [
       { x: -size, y: -size },
       { x: size, y: -size },
       { x: size, y: size },
       { x: -size, y: size },
     ]
-  
+
     return ps.map((p) => {
       const np: PointProps = {
         x: p.x + point.x,
@@ -130,3 +148,4 @@ export class Border {
     })
   }
 }
+

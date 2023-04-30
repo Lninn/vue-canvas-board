@@ -169,22 +169,6 @@ export const draw_rectangle = (ctx: I2DCtx, props: RectangleProps, style?: Canva
   apply_canvas_style(ctx, style)
 }
 
-export const adjust_rectangle_props = (props: RectangleProps): RectangleProps => {
-  const { x, y, w, h } = props
-
-  let xPartProps: Pick<RectangleProps, 'x' | 'w'> | null = null
-  let yPartProps: Pick<RectangleProps, 'y' | 'h'> | null = null
-
-  if (w < 0) xPartProps = { x: w + x, w: Math.abs(w) }
-  if (h < 0) yPartProps = { y: y + h, h: Math.abs(h) }
-
-  let finalProps: RectangleProps = props
-  if (xPartProps) finalProps = { ...finalProps, ...xPartProps }
-  if (yPartProps) finalProps = { ...finalProps, ...yPartProps }
-
-  return finalProps
-}
-
 export const create_ellipse_path = (props: RectangleProps): EllipsePath => {
   const { x, y, w, h } = props
 
@@ -211,4 +195,11 @@ export const draw_ellipse_path = (ctx: I2DCtx, path: EllipsePath, style?: Canvas
   )
 
   apply_canvas_style(ctx, style)
+}
+
+export const append_point = (p1: PointProps, p2: PointProps) => {
+  return {
+    x: p1.x + p2.x,
+    y: p1.y + p2.y,
+  } as PointProps
 }

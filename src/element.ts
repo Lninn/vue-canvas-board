@@ -9,7 +9,6 @@ import {
 } from './type'
 import { Border } from './border';
 import {
-  adjust_rectangle_props,
   create_ellipse_path,
   create_rectangle_props,
   draw_ellipse_path,
@@ -17,9 +16,48 @@ import {
   rectangle_intersection,
 } from './shared';
 
+class Coords {
+  private props: RectangleProps
+  private relative_props: RectangleProps
+
+  constructor(props: RectangleProps) {
+    this.props = props
+    this.relative_props = this.parse_props(props)
+  }
+
+  public get_props() {
+    return this.props
+  }
+
+  public get_relative_props() {
+    return this.relative_props
+  }
+
+  public update_props(props: RectangleProps) {
+    this.props = props
+    this.relative_props = this.parse_props(props)
+  }
+
+  private parse_props (props: RectangleProps): RectangleProps {
+    const { x, y, w, h } = props
+  
+    let xPartProps: Pick<RectangleProps, 'x' | 'w'> | null = null
+    let yPartProps: Pick<RectangleProps, 'y' | 'h'> | null = null
+  
+    if (w < 0) xPartProps = { x: w + x, w: Math.abs(w) }
+    if (h < 0) yPartProps = { y: y + h, h: Math.abs(h) }
+  
+    let finalProps: RectangleProps = props
+    if (xPartProps) finalProps = { ...finalProps, ...xPartProps }
+    if (yPartProps) finalProps = { ...finalProps, ...yPartProps }
+  
+    return finalProps
+  }
+}
+
 export class DrawElement {
   private type: ShapeType
-  private props: RectangleProps
+  private coords: Coords
   private path: EllipsePath | RectangleProps
   private style: CanvasApplyStyle
   private activePlacement: Placement | null
@@ -27,10 +65,10 @@ export class DrawElement {
 
   constructor(type: ShapeType, p: RectangleProps, style: CanvasApplyStyle) {
     this.type = type
-    this.props = p
+    this.coords = new Coords(p)
     this.style = style
     this.activePlacement = null
-    this.border = new Border(p)
+    this.border = new Border(this.coords.get_relative_props())
     this.path = this.create_path(p)
   }
 
@@ -38,8 +76,12 @@ export class DrawElement {
     return new this(type, props, style)
   }
 
+  private get props() {
+    return this.coords.get_props()
+  }
+
   public getProps() {
-    return this.props
+    return this.coords.get_props()
   }
 
   public has_placement() {
@@ -48,6 +90,10 @@ export class DrawElement {
 
   public on_blur() {
     this.activePlacement = null
+  }
+
+  public is_valid() {
+    return this.props.w > 0 && this.props.h > 0
   }
 
   public on_move(down_point: PointProps, move_point: PointProps) {
@@ -75,9 +121,9 @@ export class DrawElement {
   }
 
   public update_props(props: RectangleProps) {
-    this.props = props
+    this.coords.update_props(props)
     this.path = this.create_path(props)
-    this.border.update(props)
+    this.border.update(this.coords.get_relative_props())
   }
 
   private create_path (props: RectangleProps) {
@@ -144,7 +190,7 @@ export class DrawElement {
     }
 
     const intersectionInRect = rectangle_intersection(
-      adjust_rectangle_props(this.props),
+      this.coords.get_relative_props(),
       p,
     )
 
