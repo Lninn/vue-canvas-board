@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { reactive } from "vue";
 import { I2DCtx, PointProps, RectangleProps } from "../type";
 import { draw_line, draw_rectangle } from "./shared";
 import { IXXXOption } from "../components";
@@ -10,7 +10,7 @@ class Rectangle {
     this.props = props
   }
 
-  public rect_intersection(point: PointProps): Boolean {
+  public is_intersection(point: PointProps): Boolean {
     const { x, y, w, h } = this.props
 
     const inX = point.x >= x && point.x <= x + w
@@ -67,7 +67,7 @@ class Cache {
   }
   public cache_children() {
     const children = JSON.stringify(
-      user_state.value.children.map(r => r.get_props()),
+      user_state.children.map(r => r.get_props()),
     )
     localStorage.setItem('children', children)
   }
@@ -75,7 +75,7 @@ class Cache {
 
 const cache = new Cache()
 
-export const user_state = ref<IUserState>({
+export const user_state = reactive<IUserState>({
   mouse_down_style: '#ff0000',
   mouse_move_style: '#0000ff',
   has_down: false,
@@ -88,7 +88,7 @@ export const user_state = ref<IUserState>({
 
 const config = {
   center_line: false,
-  cache: false,
+  cache: true,
 }
 
 export class User {
@@ -112,39 +112,67 @@ export class User {
   }
 
   public on_mouse_down(point: PointProps) {
-    user_state.value.down_point = point
-    user_state.value.has_down = true
+    user_state.down_point = point
+    user_state.has_down = true
+
+    if (user_state.active_rectangle) {
+      user_state.active_rectangle = null
+    }
+
+    switch (user_state.action) {
+      case Action.Select:
+        let rect: Rectangle | null = null
+        for (const child of user_state.children) {
+          if (child.is_intersection(point)) {
+            rect = child as any
+          }
+        }
+
+        if (rect) {
+          user_state.active_rectangle = rect
+        }
+
+        break
+      case Action.Rectangle:
+        break
+    }
   }
 
   public on_mouse_move(point: PointProps) {
-    user_state.value.move_point = point
+    user_state.move_point = point
   }
 
   public on_mouse_up() {
-    const rect = user_state.value.active_rectangle
-    if (rect) {
-      user_state.value.children.push(
-        rect
-      )
-      if (config.cache) {
-        cache.cache_children()
-      }
-      user_state.value.active_rectangle = null
+    switch (user_state.action) {
+      case Action.Select:
+        break
+      case Action.Rectangle:
+        const rect = user_state.active_rectangle
+        if (rect) {
+          user_state.children.push(
+            rect
+          )
+          if (config.cache) {
+            cache.cache_children()
+          }
+          user_state.active_rectangle = null
+        }
+        break
     }
 
-    user_state.value.has_down = false
-    user_state.value.down_point = null
+    user_state.has_down = false
+    user_state.down_point = null
   }
 
   public update() {
-    const { down_point, move_point } = user_state.value
+    const { down_point, move_point } = user_state
 
-    switch (user_state.value.action) {
+    switch (user_state.action) {
       case Action.Select:
         if (move_point) {
           let cursor = 'auto'
-          for (const child of user_state.value.children) {
-            if (child.rect_intersection(move_point)) {
+          for (const child of user_state.children) {
+            if (child.is_intersection(move_point)) {
               cursor = 'move'
             }
           }
@@ -155,7 +183,7 @@ export class User {
         this.canvas.style.cursor = 'crosshair'
 
         if (down_point && move_point) {
-          user_state.value.active_rectangle = (
+          user_state.active_rectangle = (
             new Rectangle(
               this.create_props(down_point, move_point),
             )
@@ -178,22 +206,22 @@ export class User {
     const w = down.x - move.x
     const h = down.y - move.y
     const props: RectangleProps = {
-      x: move.x,
-      y: move.y,
-      w,
-      h,
+      x: down.x < move.x ? down.x : move.x,
+      y: down.y < move.y ? down.y : move.y,
+      w: Math.abs(w),
+      h: Math.abs(h),
     }
     return props
   }
 
   private draw_children() {
-    for (const child of user_state.value.children) {
+    for (const child of user_state.children) {
       child.draw(this.ctx)
     }
   }
 
   private draw_mouse_link_line() {
-    const { down_point, move_point } = user_state.value
+    const { down_point, move_point } = user_state
     if (!down_point || !move_point) return
 
     draw_line(
@@ -205,19 +233,21 @@ export class User {
   }
 
   private draw_child() {
-    if (user_state.value.active_rectangle) {
-      user_state.value.active_rectangle.draw(this.ctx)
+    if (user_state.action === Action.Rectangle) {
+      if (user_state.active_rectangle) {
+        user_state.active_rectangle.draw(this.ctx)
+      }
     }
   }
 
   private draw_mouse_center_line() {
-    const { down_point, move_point } = user_state.value
+    const { down_point, move_point } = user_state
     if (down_point) {
       draw_line(
         this.ctx,
         this.center,
         down_point,
-        { strokeStyle: user_state.value.mouse_down_style },
+        { strokeStyle: user_state.mouse_down_style },
       )
     }
 
@@ -226,7 +256,7 @@ export class User {
         this.ctx,
         this.center,
         move_point,
-        { strokeStyle: user_state.value.mouse_move_style },
+        { strokeStyle: user_state.mouse_move_style },
       )
     }
   }
