@@ -19,6 +19,10 @@ class Rectangle {
     return inX && inY
   }
 
+  public move(point: PointProps) {
+    this.props = Object.assign({}, this.props, point)
+  }
+
   public draw(ctx: I2DCtx) {
     draw_rectangle(ctx, this.props, { strokeStyle: 'gray' })
   }
@@ -55,10 +59,13 @@ class Cache {
     if (children) {
       try {
         const propsList: RectangleProps[] = JSON.parse(children)
-        return propsList.map(props => {
+        const childList = propsList.map(props => {
           return new Rectangle(props)
         })
+        return childList
       } catch (error) {
+        console.log('error ', error);
+        
         return []
       }
     } else {
@@ -96,6 +103,8 @@ export class User {
   private canvas: HTMLCanvasElement
   private center: PointProps
 
+  private props: RectangleProps | null = null
+
   constructor(ctx: I2DCtx, canvas: HTMLCanvasElement) {
     const {
       clientWidth,
@@ -124,14 +133,14 @@ export class User {
         let rect: Rectangle | null = null
         for (const child of user_state.children) {
           if (child.is_intersection(point)) {
-            rect = child as any
+            rect = child as Rectangle
           }
         }
 
         if (rect) {
           user_state.active_rectangle = rect
+          this.props = rect.get_props()
         }
-
         break
       case Action.Rectangle:
         break
@@ -177,6 +186,20 @@ export class User {
             }
           }
           this.canvas.style.cursor = cursor
+
+          if (user_state.active_rectangle) {
+            if (this.props) {
+              if (down_point) {
+                const xOffset = move_point.x - down_point.x + this.props.x
+                const yOffset = move_point.y - down_point.y + this.props.y
+
+                user_state.active_rectangle.move({ x: xOffset, y: yOffset })
+                if (config.cache) {
+                  cache.cache_children()
+                }
+              }
+            }
+          }
         }
         break
       case Action.Rectangle:
