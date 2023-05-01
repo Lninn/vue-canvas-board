@@ -1,13 +1,34 @@
-import { reactive } from "vue";
 import { I2DCtx, PointProps, RectangleProps } from "../type";
-import { draw_line, draw_rectangle } from "./shared";
+import { draw_line, draw_points, draw_rectangle } from "./shared";
 import { IXXXOption } from "../components";
+import { reactive } from "vue";
 
-class Rectangle {
+
+export const enum Action {
+  Select = 'Select',
+  Rectangle = 'Rectangle',
+}
+
+interface IUserState {
+  border_box_size: number
+  border_box_padding: number
+  mouse_down_style: string
+  mouse_move_style: string
+  has_down: boolean
+  down_point: PointProps | null
+  move_point: PointProps | null
+  active_rectangle: Rectangle | null
+  children: Rectangle[]
+  action: Action
+}
+
+export class Rectangle {
   private props: RectangleProps
+  private box_list: PointProps[][]
 
   constructor(props: RectangleProps) {
     this.props = props
+    this.box_list = this.create_box(props)
   }
 
   public is_intersection(point: PointProps): Boolean {
@@ -21,36 +42,72 @@ class Rectangle {
 
   public move(point: PointProps) {
     this.props = Object.assign({}, this.props, point)
+    this.box_list = this.create_box(this.props)
   }
 
   public draw(ctx: I2DCtx) {
     draw_rectangle(ctx, this.props, { strokeStyle: 'gray' })
+
+    this.draw_size_box(ctx)
+  }
+
+  private draw_size_box(ctx: I2DCtx) {
+    this.box_list.forEach(points => {
+      draw_points(ctx, points, { strokeStyle: 'blue' })
+    })
+  }
+
+  /**
+   * padding size sycn to draw
+   * @returns 
+   */
+  private create_box(props: RectangleProps) {
+    const { x, y, w, h } = props
+    const padding = user_state.border_box_padding
+
+    const top = y
+    const right = x + w
+    const bottom = h + y
+    const left = x
+
+    const points: PointProps[] = [
+      {
+        x: left - padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: bottom + padding,
+      },
+      {
+        x: left - padding,
+        y: bottom + padding,
+      },
+    ]
+
+    return points.map(this.create_size_box)
+  }
+
+  private create_size_box(point: PointProps) {
+    const { x, y } = point
+
+    const size = user_state.border_box_size
+
+    return [
+      { x: x - size, y: y - size },
+      { x: x + size, y: y - size },
+      { x: x + size, y: y + size },
+      { x: x - size, y: y + size },
+    ] as PointProps[]
   }
 
   public get_props() {
     return this.props
   }
-}
-
-const enum Action {
-  Select = 'Select',
-  Rectangle = 'Rectangle',
-}
-
-export const USER_TOOL_OPTS: IXXXOption<Action>[] = [
-  { label: 'Select', value: Action.Select },
-  { label: 'Rectangle', value: Action.Rectangle },
-]
-
-interface IUserState {
-  mouse_down_style: string
-  mouse_move_style: string
-  has_down: boolean
-  down_point: PointProps | null
-  move_point: PointProps | null
-  active_rectangle: Rectangle | null
-  children: Rectangle[]
-  action: Action
 }
 
 class Cache {
@@ -65,7 +122,6 @@ class Cache {
         return childList
       } catch (error) {
         console.log('error ', error);
-        
         return []
       }
     } else {
@@ -80,21 +136,29 @@ class Cache {
   }
 }
 
-const cache = new Cache()
+export const cache = new Cache()
 
 export const user_state = reactive<IUserState>({
+  border_box_size: 10,
+  border_box_padding: 20,
   mouse_down_style: '#ff0000',
   mouse_move_style: '#0000ff',
   has_down: false,
   down_point: null,
   move_point: null,
   active_rectangle: null,
-  children: cache.get_children(),
+  children: [],
   action: Action.Select,
 })
+user_state.children = cache.get_children()
+
+export const USER_TOOL_OPTS: IXXXOption<Action>[] = [
+  { label: 'Select', value: Action.Select },
+  { label: 'Rectangle', value: Action.Rectangle },
+]
 
 const config = {
-  center_line: false,
+  center_line: true,
   cache: true,
 }
 
