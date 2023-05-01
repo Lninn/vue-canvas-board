@@ -2,6 +2,7 @@ import { create_canvas } from './shared'
 import { PointProps } from '../type'
 import { IS_MOBILE } from './store'
 import { Scene } from './scene'
+import { User } from './user'
 
 export function main() {
   const payload = create_canvas()
@@ -9,17 +10,18 @@ export function main() {
 
   const { canvas, ctx } = payload
 
-  const scene = new Scene(ctx)
+  // const scene = new Scene(ctx)
+  const user = new User(ctx, canvas)
 
   const clear = () => {
     const { width, height } = canvas
     ctx.clearRect(0, 0, width, height)
   }
   const update = () => {
-    scene.update()
+    user.update()
   }
   const draw = () => {
-    scene.draw(ctx)
+    user.draw()
   }
   const loop = () => {
     clear()
@@ -32,7 +34,8 @@ export function main() {
     requestAnimationFrame(loop)
   }
 
-  bind_event(canvas, scene)
+  // bind_event(canvas, scene)
+  user_bind_event(canvas, user)
 
   start()
 }
@@ -93,4 +96,23 @@ const bind_event = (canvas: HTMLCanvasElement, scene: Scene) => {
   }
 
   window.addEventListener('keydown', handleKeyDown)
+}
+
+const user_bind_event = (canvas: HTMLCanvasElement, user: User) => {
+  const handleMouseDown = (ev: MouseEvent) => {
+    const crtP = to_pc_point(ev)
+    user.on_mouse_down(crtP)
+  }
+  const handleMouseMove = (ev: MouseEvent) => {
+    const crtP = to_pc_point(ev)
+    user.on_mouse_move(crtP)
+  }
+  const handleMouseUp = () => {
+    user.on_mouse_up()
+  }
+
+  canvas.addEventListener('mousedown', handleMouseDown)
+  canvas.addEventListener('mousemove', handleMouseMove)
+  canvas.addEventListener('mouseup', handleMouseUp)
+
 }
