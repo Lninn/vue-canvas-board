@@ -240,8 +240,8 @@ interface ISceneState {
 }
 
 export const scene_state = reactive<ISceneState>({
-  border_box_size: 30,
-  border_box_padding: 40,
+  border_box_size: 5,
+  border_box_padding: 10,
   mouse_down_style: '#ff0000',
   mouse_move_style: '#0000ff',
   has_down: false,
@@ -267,7 +267,7 @@ const Cursor_Map: Record<Placement, string> = {
 }
 
 const config = {
-  center_line: true,
+  center_line: false,
   cache: true,
 }
 
@@ -301,20 +301,21 @@ export class Scene {
 
     switch (scene_state.action) {
       case Action.Select:
-        const current_rect = this.find_child(point)
-        if (current_rect) {
-          scene_state.active_rectangle = current_rect
-          this.props = current_rect.get_props()
-          border = new Border(
-            current_rect.get_props(),
-          )
+        const placement = border.get_current_placement()
+
+        if (!!placement) {
+          // 更新到最新的 props
+          if (scene_state.active_rectangle) {
+            this.props = scene_state.active_rectangle.get_props()
+          }
         } else {
-          const placement = border.get_current_placement()
-          if (!!placement) {
-            // 更新到最新的 props
-            if (scene_state.active_rectangle) {
-              this.props = scene_state.active_rectangle.get_props()
-            }
+          const current_rect = this.find_child(point)
+          if (current_rect) {
+            scene_state.active_rectangle = current_rect
+            this.props = current_rect.get_props()
+            border = new Border(
+              current_rect.get_props(),
+            )
           } else {
             scene_state.active_rectangle = null
             this.props = null
@@ -364,41 +365,76 @@ export class Scene {
 
   public update() {
     const { down_point, move_point, active_rectangle } = scene_state
-    if (!active_rectangle || !move_point) return
+    if (!move_point) return
 
     switch (scene_state.action) {
       case Action.Select:
         if (scene_state.has_down) {
           const __down_point = down_point as PointProps
+          const x_move_offset = move_point.x - __down_point.x
+          const y_move_offset = move_point.y - __down_point.y
 
           const placement = border.get_current_placement()
 
           if (placement) {
             if (this.props) {
-              const point: PointProps = {
-                x: this.props.x + this.props.w,
-                y: this.props.y + this.props.h,
+              let final_point: PointProps | null = null
+              let final_move: PointProps | null = null
+
+              switch (placement) {
+                case Placement.Top:
+                  final_point = {
+                    x: this.props.x + this.props.w,
+                    y: this.props.y + this.props.h,
+                  }
+
+                  final_move = {
+                    x: x_move_offset + this.props.x,
+                    y: y_move_offset + this.props.y,
+                  }
+                  break
+                case Placement.Right:
+                  final_point = {
+                    x: this.props.x,
+                    y: this.props.y + this.props.h,
+                  }
+
+                  final_move = {
+                    x: x_move_offset + this.props.x + this.props.w,
+                    y: y_move_offset + this.props.y,
+                  }
+                  break
+                case Placement.Bottom:
+                  final_point = {
+                    x: this.props.x,
+                    y: this.props.y,
+                  }
+
+                  final_move = {
+                    x: x_move_offset + this.props.x + this.props.w,
+                    y: y_move_offset + this.props.y + this.props.h,
+                  }
+                  break
+                case Placement.Left:
+                  final_point = {
+                    x: this.props.x + this.props.w,
+                    y: this.props.y,
+                  }
+
+                  final_move = {
+                    x: x_move_offset + this.props.x,
+                    y: y_move_offset + this.props.y + this.props.h,
+                  }
+                  break
               }
 
-              const xOffset = move_point.x - __down_point.x + this.props.x
-              const yOffset = move_point.y - __down_point.y + this.props.y
-
-              const xGap = __down_point.x - this.props.x
-              const yGap = __down_point.y - this.props.y
-             
-              const final_move: PointProps = {
-                x: xOffset,
-                y: yOffset,
-              }
-
-              console.log({ xGap, yGap });
-              
-
-              const props = this.create_props(point, final_move)
-              active_rectangle.resize(props)
-              border.update(active_rectangle.get_props())
-              if (config.cache) {
-                cache.cache_children()
+              const props = this.create_props(final_point, final_move)
+              if (active_rectangle) {
+                active_rectangle.resize(props)
+                border.update(active_rectangle.get_props())
+                if (config.cache) {
+                  cache.cache_children()
+                }
               }
             }
           } else {
@@ -406,11 +442,13 @@ export class Scene {
               if (this.props && down_point) {
                 const xOffset = move_point.x - down_point.x + this.props.x
                 const yOffset = move_point.y - down_point.y + this.props.y
-    
-                active_rectangle.move({ x: xOffset, y: yOffset })
-                border.update(active_rectangle.get_props())
-                if (config.cache) {
-                  cache.cache_children()
+
+                if (active_rectangle) {
+                  active_rectangle.move({ x: xOffset, y: yOffset })
+                  border.update(active_rectangle.get_props())
+                  if (config.cache) {
+                    cache.cache_children()
+                  }
                 }
               }
             }
@@ -426,11 +464,13 @@ export class Scene {
           }
 
           const placement = border.get_current_placement()
-          if (!!placement) {
-            active_rectangle.set_style({ fillStyle: '#0000001a' })
-            scene_state.cursor = Cursor_Map[placement]
-          } else {
-            active_rectangle.set_style(null)
+          if (active_rectangle) {
+            if (!!placement) {
+              active_rectangle.set_style({ fillStyle: '#0000001a' })
+              scene_state.cursor = Cursor_Map[placement]
+            } else {
+              active_rectangle.set_style(null)
+            }
           }
 
           this.canvas.style.cursor = scene_state.cursor
