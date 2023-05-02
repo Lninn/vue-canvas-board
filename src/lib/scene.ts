@@ -13,7 +13,6 @@ import {
 import { IXXXOption } from "../components";
 import { reactive } from "vue";
 
-
 export const enum Action {
   Select = 'Select',
   Rectangle = 'Rectangle',
@@ -180,6 +179,10 @@ export class Rectangle {
     this.props = Object.assign({}, this.props, point)
   }
 
+  public resize(props: RectangleProps) {
+    this.props = props
+  }
+
   public draw(ctx: I2DCtx) {
     const style = this.current_style ? this.current_style : this.defalt_style
     draw_rectangle(ctx, this.props, style)
@@ -237,8 +240,8 @@ interface ISceneState {
 }
 
 export const scene_state = reactive<ISceneState>({
-  border_box_size: 20,
-  border_box_padding: 30,
+  border_box_size: 30,
+  border_box_padding: 40,
   mouse_down_style: '#ff0000',
   mouse_move_style: '#0000ff',
   has_down: false,
@@ -308,7 +311,10 @@ export class Scene {
         } else {
           const placement = border.get_current_placement()
           if (!!placement) {
-            //
+            // 更新到最新的 props
+            if (scene_state.active_rectangle) {
+              this.props = scene_state.active_rectangle.get_props()
+            }
           } else {
             scene_state.active_rectangle = null
             this.props = null
@@ -363,11 +369,38 @@ export class Scene {
     switch (scene_state.action) {
       case Action.Select:
         if (scene_state.has_down) {
+          const __down_point = down_point as PointProps
+
           const placement = border.get_current_placement()
 
           if (placement) {
-            //
-            
+            if (this.props) {
+              const point: PointProps = {
+                x: this.props.x + this.props.w,
+                y: this.props.y + this.props.h,
+              }
+
+              const xOffset = move_point.x - __down_point.x + this.props.x
+              const yOffset = move_point.y - __down_point.y + this.props.y
+
+              const xGap = __down_point.x - this.props.x
+              const yGap = __down_point.y - this.props.y
+             
+              const final_move: PointProps = {
+                x: xOffset,
+                y: yOffset,
+              }
+
+              console.log({ xGap, yGap });
+              
+
+              const props = this.create_props(point, final_move)
+              active_rectangle.resize(props)
+              border.update(active_rectangle.get_props())
+              if (config.cache) {
+                cache.cache_children()
+              }
+            }
           } else {
             if (move_point) {
               if (this.props && down_point) {
@@ -394,7 +427,7 @@ export class Scene {
 
           const placement = border.get_current_placement()
           if (!!placement) {
-            active_rectangle.set_style({ fillStyle: 'red' })
+            active_rectangle.set_style({ fillStyle: '#0000001a' })
             scene_state.cursor = Cursor_Map[placement]
           } else {
             active_rectangle.set_style(null)
