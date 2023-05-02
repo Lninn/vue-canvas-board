@@ -19,17 +19,147 @@ export const enum Action {
   Rectangle = 'Rectangle',
 }
 
-interface IUserState {
-  border_box_size: number
-  border_box_padding: number
-  mouse_down_style: string
-  mouse_move_style: string
-  has_down: boolean
-  down_point: PointProps | null
-  move_point: PointProps | null
-  active_rectangle: Rectangle | null
-  children: Rectangle[]
-  action: Action
+const enum Placement {
+  Top = 'Top',
+  Right = 'Right',
+  Bottom = 'Bottom',
+  Left = 'Left',
+}
+
+type Box = [PointProps, PointProps, PointProps, PointProps]
+type BoxList = [Box, Box, Box, Box]
+
+class Border {
+  private box_list: BoxList | null
+  private placement: Placement | null
+  private active_box: Box | null
+
+  constructor(props: RectangleProps | null) {
+    this.box_list = props ? this.create_box(props) : null
+    this.placement = null
+    this.active_box = null
+  }
+
+  public to_json() {
+    return {
+      placement: this.placement,
+      active_box: this.active_box,
+    }
+  }
+
+  public get_current_placement() {
+    return this.placement
+  }
+
+  public clear() {
+    this.placement = null
+    this.box_list = null
+  }
+
+  public update(props: RectangleProps) {
+    this.box_list = this.create_box(props)
+  }
+
+  public draw(ctx: I2DCtx) {
+    if (this.box_list) {
+      this.box_list.forEach(points => {
+        draw_points(ctx, points, { strokeStyle: 'blue' })
+      })
+    }
+  }
+
+  public check(point: PointProps) {
+    const IDX_MAP: Record<number, Placement> = {
+      0: Placement.Top,
+      1: Placement.Right,
+      2: Placement.Bottom,
+      3: Placement.Left,
+    }
+
+    if (this.box_list) {
+      let current_box: Box | null = null
+      let idx: number = -1
+
+      for (let i = 0; i < this.box_list.length; i++) {
+        const box = this.box_list[i]
+        const props = this.get_props_by_points(box)
+        if (rectangle_intersection(props, point)) {
+          current_box = box
+          idx = i
+        }
+      }
+
+      if (current_box) {
+        this.placement = IDX_MAP[idx]
+        this.active_box = current_box
+      } else {
+        this.placement = null
+        this.active_box = null
+      }
+    }
+  }
+
+  private get_props_by_points(points: PointProps[]): RectangleProps {
+    const [p1, p2, p3] = points
+
+    const w = Math.abs(p1.x - p2.x)
+    const h = Math.abs(p1.y - p3.y)
+
+    return {
+      x: p1.x,
+      y: p1.y,
+      w,
+      h,
+    }
+  }
+
+  /**
+   * padding size sycn to draw
+   * @returns 
+   */
+  private create_box(props: RectangleProps) {
+    const { x, y, w, h } = props
+    const padding = scene_state.border_box_padding
+
+    const top = y
+    const right = x + w
+    const bottom = h + y
+    const left = x
+
+    const points: PointProps[] = [
+      {
+        x: left - padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: bottom + padding,
+      },
+      {
+        x: left - padding,
+        y: bottom + padding,
+      },
+    ]
+
+    return points.map(this.create_size_box) as BoxList
+  }
+
+  private create_size_box(point: PointProps) {
+    const { x, y } = point
+
+    const size = scene_state.border_box_size
+
+    return [
+      { x: x - size, y: y - size },
+      { x: x + size, y: y - size },
+      { x: x + size, y: y + size },
+      { x: x - size, y: y + size },
+    ] as Box
+  }
 }
 
 export class Rectangle {
@@ -84,7 +214,7 @@ class Cache {
   }
   public cache_children() {
     const children = JSON.stringify(
-      user_state.children.map(r => r.get_props()),
+      scene_state.children.map(r => r.get_props()),
     )
     localStorage.setItem('children', children)
   }
@@ -92,7 +222,21 @@ class Cache {
 
 export const cache = new Cache()
 
-export const user_state = reactive<IUserState>({
+interface ISceneState {
+  border_box_size: number
+  border_box_padding: number
+  mouse_down_style: string
+  mouse_move_style: string
+  has_down: boolean
+  down_point: PointProps | null
+  move_point: PointProps | null
+  active_rectangle: Rectangle | null
+  children: Rectangle[]
+  action: Action
+  cursor: string
+}
+
+export const scene_state = reactive<ISceneState>({
   border_box_size: 20,
   border_box_padding: 30,
   mouse_down_style: '#ff0000',
@@ -103,18 +247,28 @@ export const user_state = reactive<IUserState>({
   active_rectangle: null,
   children: [],
   action: Action.Select,
+  cursor: 'auto',
 })
-user_state.children = cache.get_children()
+scene_state.children = cache.get_children()
 
 export const USER_TOOL_OPTS: IXXXOption<Action>[] = [
   { label: 'Select', value: Action.Select },
   { label: 'Rectangle', value: Action.Rectangle },
 ]
 
+const Cursor_Map: Record<Placement, string> = {
+  [Placement.Top]: 'nwse-resize',
+  [Placement.Right]: 'nesw-resize',
+  [Placement.Bottom]: 'nwse-resize',
+  [Placement.Left]: 'nesw-resize',
+}
+
 const config = {
   center_line: true,
   cache: true,
 }
+
+export let border = new Border(null)
 
 export class Scene {
   private ctx: I2DCtx
@@ -122,8 +276,6 @@ export class Scene {
   private center: PointProps
 
   private props: RectangleProps | null = null
-  private box_list: PointProps[][] | null = null
-  private active_box: PointProps[] | null = null
 
   constructor(ctx: I2DCtx, canvas: HTMLCanvasElement) {
     const {
@@ -141,25 +293,27 @@ export class Scene {
   }
 
   public on_mouse_down(point: PointProps) {
-    user_state.down_point = point
-    user_state.has_down = true
+    scene_state.down_point = point
+    scene_state.has_down = true
 
-    switch (user_state.action) {
+    switch (scene_state.action) {
       case Action.Select:
-        const box = this.get_box_by_point(point)
-        this.active_box = box
-
-        let rect: Rectangle | null = null
-        for (const child of user_state.children) {
-          if (child.is_intersection(point)) {
-            rect = child as Rectangle
+        const current_rect = this.find_child(point)
+        if (current_rect) {
+          scene_state.active_rectangle = current_rect
+          this.props = current_rect.get_props()
+          border = new Border(
+            current_rect.get_props(),
+          )
+        } else {
+          const placement = border.get_current_placement()
+          if (!!placement) {
+            //
+          } else {
+            scene_state.active_rectangle = null
+            this.props = null
+            border.clear()
           }
-        }
-
-        if (rect) {
-          user_state.active_rectangle = rect
-          this.props = rect.get_props()
-          this.box_list = this.create_box(this.props)
         }
         break
       case Action.Rectangle:
@@ -167,99 +321,104 @@ export class Scene {
     }
   }
 
+  private find_child(point: PointProps) {
+    for (const child of scene_state.children) {
+      if (child.is_intersection(point)) {
+        return child as Rectangle
+      }
+    }
+    return null
+  }
+
   public on_mouse_move(point: PointProps) {
-    user_state.move_point = point
+    scene_state.move_point = point
   }
 
   public on_mouse_up() {
-    switch (user_state.action) {
+    switch (scene_state.action) {
       case Action.Select:
-        user_state.active_rectangle = null
         break
       case Action.Rectangle:
-        const rect = user_state.active_rectangle
+        const rect = scene_state.active_rectangle
         if (rect) {
-          user_state.children.push(
+          scene_state.children.push(
             rect
           )
           if (config.cache) {
             cache.cache_children()
           }
-          user_state.active_rectangle = null
+          scene_state.active_rectangle = null
         }
         break
     }
 
-    user_state.has_down = false
-    user_state.down_point = null
+    scene_state.has_down = false
+    scene_state.down_point = null
   }
 
   public update() {
-    const { down_point, move_point } = user_state
+    const { down_point, move_point, active_rectangle } = scene_state
+    if (!active_rectangle || !move_point) return
 
-    switch (user_state.action) {
+    switch (scene_state.action) {
       case Action.Select:
-        if (move_point) {
-          let cursor = 'auto'
-          for (const child of user_state.children) {
-            if (child.is_intersection(move_point)) {
-              cursor = 'move'
+        if (scene_state.has_down) {
+          const placement = border.get_current_placement()
+
+          if (placement) {
+            //
+            
+          } else {
+            if (move_point) {
+              if (this.props && down_point) {
+                const xOffset = move_point.x - down_point.x + this.props.x
+                const yOffset = move_point.y - down_point.y + this.props.y
+    
+                active_rectangle.move({ x: xOffset, y: yOffset })
+                border.update(active_rectangle.get_props())
+                if (config.cache) {
+                  cache.cache_children()
+                }
+              }
             }
           }
-          const box = this.get_box_by_point(move_point)
-          if (box) {
-            cursor = 'nw-resize'
-          }
-          this.canvas.style.cursor = cursor
+        } else {
+          border.check(move_point)
+          scene_state.cursor = 'auto'
 
-          if (this.active_box) {
-            this.handle_resize()
-          } else {
-            this.handle_move()
+          for (const child of scene_state.children) {
+            if (child.is_intersection(move_point)) {
+              scene_state.cursor = 'move'
+            }
           }
+
+          const placement = border.get_current_placement()
+          if (!!placement) {
+            active_rectangle.set_style({ fillStyle: 'red' })
+            scene_state.cursor = Cursor_Map[placement]
+          } else {
+            active_rectangle.set_style(null)
+          }
+
+          this.canvas.style.cursor = scene_state.cursor
         }
         break
       case Action.Rectangle:
-        this.canvas.style.cursor = 'crosshair'
-
-        if (down_point && move_point) {
-          user_state.active_rectangle = (
-            new Rectangle(
-              this.create_props(down_point, move_point),
-            )
-          )
-        }
+        this.handle_create()
         break
     }
   }
 
-  private handle_move() {
-    const {
-      down_point,
-      move_point,
-      active_rectangle,
-    } = user_state
-    if (!down_point || !move_point || !active_rectangle) return
+  private handle_create() {
+    const { down_point, move_point } = scene_state
+    if (!down_point || !move_point) return
 
-    if (this.props) {
-      const xOffset = move_point.x - down_point.x + this.props.x
-      const yOffset = move_point.y - down_point.y + this.props.y
-
-      active_rectangle.move({ x: xOffset, y: yOffset })
-      this.box_list = this.create_box(
-        active_rectangle.get_props()
+    this.canvas.style.cursor = 'crosshair'
+    scene_state.active_rectangle = (
+      new Rectangle(
+        this.create_props(down_point, move_point),
       )
-      if (config.cache) {
-        cache.cache_children()
-      }
-    }
-  }
-
-  private handle_resize() {
-    const { active_rectangle } = user_state
-    if (!active_rectangle) return
-
-    active_rectangle.set_style({ fillStyle: 'red' })
+    )
   }
 
   public draw() {
@@ -270,99 +429,9 @@ export class Scene {
     this.draw_child()
     this.draw_children()
 
-    this.draw_size_box()
-  }
-
-  private draw_size_box() {
-    if (this.box_list) {
-      this.box_list.forEach(points => {
-        draw_points(this.ctx, points, { strokeStyle: 'blue' })
-      })
+    if (border) {
+      border.draw(this.ctx)
     }
-  }
-
-  /**
-   * padding size sycn to draw
-   * @returns 
-   */
-  private create_box(props: RectangleProps) {
-    const { x, y, w, h } = props
-    const padding = user_state.border_box_padding
-
-    const top = y
-    const right = x + w
-    const bottom = h + y
-    const left = x
-
-    const points: PointProps[] = [
-      {
-        x: left - padding,
-        y: top - padding,
-      },
-      {
-        x: right + padding,
-        y: top - padding,
-      },
-      {
-        x: right + padding,
-        y: bottom + padding,
-      },
-      {
-        x: left - padding,
-        y: bottom + padding,
-      },
-    ]
-
-    return points.map(this.create_size_box)
-  }
-
-  private create_size_box(point: PointProps) {
-    const { x, y } = point
-
-    const size = user_state.border_box_size
-
-    return [
-      { x: x - size, y: y - size },
-      { x: x + size, y: y - size },
-      { x: x + size, y: y + size },
-      { x: x - size, y: y + size },
-    ] as PointProps[]
-  }
-
-  private get_box_by_point(point: PointProps) {
-    if (this.box_list) {
-      for (const box of this.box_list) {
-        const props = this.get_props_by_points(box)
-        if (this.is_in_rect(point, props)) {
-          return box
-        }
-      }
-    }
-
-    return null
-  }
-
-  private get_props_by_points(points: PointProps[]): RectangleProps {
-    const [p1, p2, p3] = points
-
-    const w = Math.abs(p1.x - p2.x)
-    const h = Math.abs(p1.y - p3.y)
-
-    return {
-      x: p1.x,
-      y: p1.y,
-      w,
-      h,
-    }
-  }
-
-  private is_in_rect(point: PointProps, rect: RectangleProps): Boolean {
-    const { x, y, w, h } = rect
-
-    const inX = point.x >= x && point.x <= x + w
-    const inY = point.y >= y && point.y <= y + h
-
-    return inX && inY
   }
 
   private create_props(down: PointProps, move: PointProps) {
@@ -378,13 +447,13 @@ export class Scene {
   }
 
   private draw_children() {
-    for (const child of user_state.children) {
+    for (const child of scene_state.children) {
       child.draw(this.ctx)
     }
   }
 
   private draw_mouse_link_line() {
-    const { down_point, move_point } = user_state
+    const { down_point, move_point } = scene_state
     if (!down_point || !move_point) return
 
     draw_line(
@@ -396,21 +465,21 @@ export class Scene {
   }
 
   private draw_child() {
-    if (user_state.action === Action.Rectangle) {
-      if (user_state.active_rectangle) {
-        user_state.active_rectangle.draw(this.ctx)
+    if (scene_state.action === Action.Rectangle) {
+      if (scene_state.active_rectangle) {
+        scene_state.active_rectangle.draw(this.ctx)
       }
     }
   }
 
   private draw_mouse_center_line() {
-    const { down_point, move_point } = user_state
+    const { down_point, move_point } = scene_state
     if (down_point) {
       draw_line(
         this.ctx,
         this.center,
         down_point,
-        { strokeStyle: user_state.mouse_down_style },
+        { strokeStyle: scene_state.mouse_down_style },
       )
     }
 
@@ -419,7 +488,7 @@ export class Scene {
         this.ctx,
         this.center,
         move_point,
-        { strokeStyle: user_state.mouse_move_style },
+        { strokeStyle: scene_state.mouse_move_style },
       )
     }
   }

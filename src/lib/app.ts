@@ -9,17 +9,17 @@ export function main() {
   const { canvas, ctx } = payload
 
   // const scene = new Scene(ctx)
-  const user = new Scene(ctx, canvas)
+  const scene = new Scene(ctx, canvas)
 
   const clear = () => {
     const { width, height } = canvas
     ctx.clearRect(0, 0, width, height)
   }
   const update = () => {
-    user.update()
+    scene.update()
   }
   const draw = () => {
-    user.draw()
+    scene.draw()
   }
   const loop = () => {
     clear()
@@ -33,7 +33,7 @@ export function main() {
   }
 
   // bind_event(canvas, scene)
-  user_bind_event(canvas, user)
+  user_bind_event(canvas, scene)
 
   start()
 }

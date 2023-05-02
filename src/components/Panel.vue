@@ -11,7 +11,7 @@
   user-select: none;
   position: absolute;
   top: 16px;
-  left: 16px;
+  right: 16px;
 
   &-content {
     display: flex;
