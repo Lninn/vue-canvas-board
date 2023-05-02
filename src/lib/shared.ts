@@ -1,4 +1,3 @@
-import { BORDER_PADDING } from './store'
 import {
   CanvasApplyStyle,
   I2DCtx,
@@ -6,25 +5,6 @@ import {
   RectangleProps,
   EllipsePath,
 } from '../type'
-
-export const with_padding = (points: PointProps[]) => {
-  const p = BORDER_PADDING
-
-  const appendPaddingPoints: PointProps[] = [
-    { x: -p, y: -p },
-    { x: +p, y: -p },
-    { x: p, y: p },
-    { x: -p, y: p },
-  ]
-
-  return points.map((p, i) => {
-    const { x, y } = p
-
-    const ap = appendPaddingPoints[i]
-
-    return { x: x + ap.x, y: y + ap.y }
-  })
-}
 
 export const draw_points = (ctx: I2DCtx, points: PointProps[], style?: CanvasApplyStyle) => {
   const [start, ...restPoints] = points

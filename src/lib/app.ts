@@ -1,8 +1,6 @@
 import { create_canvas } from './shared'
 import { PointProps } from '../type'
-import { IS_MOBILE } from './store'
 import { Scene } from './scene'
-import { User } from './user'
 
 export function main() {
   const payload = create_canvas()
@@ -11,7 +9,7 @@ export function main() {
   const { canvas, ctx } = payload
 
   // const scene = new Scene(ctx)
-  const user = new User(ctx, canvas)
+  const user = new Scene(ctx, canvas)
 
   const clear = () => {
     const { width, height } = canvas
@@ -40,65 +38,13 @@ export function main() {
   start()
 }
 
-const to_mobile_point = (ev: TouchEvent) => {
-  const { pageX, pageY } = ev.touches[0]
-
-  const p: PointProps = { x: pageX, y: pageY }
-
-  return p
-}
-
 const to_pc_point = (ev: MouseEvent) => {
   const p: PointProps = { x: ev.pageX, y: ev.pageY }
 
   return p
 }
 
-const bind_event = (canvas: HTMLCanvasElement, scene: Scene) => {
-  const handleMouseDown = (ev: MouseEvent) => {
-    const crtP = to_pc_point(ev)
-    scene.on_pointer_down(crtP)
-  }
-  const handleMouseMove = (ev: MouseEvent) => {
-    const crtP = to_pc_point(ev)
-    scene.on_move(crtP)
-  }
-  const handleMouseUp = () => {
-    scene.on_pointer_up()
-  }
-
-  const handleTouchStart = (ev: TouchEvent) => {
-    const point = to_mobile_point(ev)
-    scene.on_pointer_down(point)
-  }
-  const handleTouchMove = (ev: TouchEvent) => {
-    const point = to_mobile_point(ev)
-    scene.on_move(point)
-  }
-  const handleTouchEnd = () => {
-    scene.on_pointer_up()
-  }
-
-  const handleKeyDown = (ev: KeyboardEvent) => {
-    if (ev.key === 'Backspace' || ev.key === 'd') {
-      scene.remove_active_child ()
-    }
-  }
-
-  if (IS_MOBILE) {
-    canvas.addEventListener('touchstart', handleTouchStart)
-    canvas.addEventListener('touchmove', handleTouchMove)
-    canvas.addEventListener('touchend', handleTouchEnd)
-  } else {
-    canvas.addEventListener('mousedown', handleMouseDown)
-    canvas.addEventListener('mousemove', handleMouseMove)
-    canvas.addEventListener('mouseup', handleMouseUp)
-  }
-
-  window.addEventListener('keydown', handleKeyDown)
-}
-
-const user_bind_event = (canvas: HTMLCanvasElement, user: User) => {
+const user_bind_event = (canvas: HTMLCanvasElement, user: Scene) => {
   const handleMouseDown = (ev: MouseEvent) => {
     const crtP = to_pc_point(ev)
     user.on_mouse_down(crtP)

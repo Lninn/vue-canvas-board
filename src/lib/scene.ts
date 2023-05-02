@@ -1,247 +1,426 @@
 import {
-  RECTANGLE_STYLE,
-  current_scene_state,
-} from "./store"
-import { DrawElement } from "./element"
-import {
-  create_rectangle_props,
-  draw_line,
-} from "./shared"
-import {
-  I2DCtx,
-  DrawAction,
-  PointProps,
   CanvasApplyStyle,
+  I2DCtx,
+  PointProps,
   RectangleProps,
-  ShapeType,
-} from "../type"
+} from "../type";
+import {
+  draw_line,
+  draw_points,
+  draw_rectangle,
+  rectangle_intersection,
+} from "./shared";
+import { IXXXOption } from "../components";
+import { reactive } from "vue";
+
+
+export const enum Action {
+  Select = 'Select',
+  Rectangle = 'Rectangle',
+}
+
+interface IUserState {
+  border_box_size: number
+  border_box_padding: number
+  mouse_down_style: string
+  mouse_move_style: string
+  has_down: boolean
+  down_point: PointProps | null
+  move_point: PointProps | null
+  active_rectangle: Rectangle | null
+  children: Rectangle[]
+  action: Action
+}
+
+export class Rectangle {
+  private props: RectangleProps
+  private defalt_style: CanvasApplyStyle = { strokeStyle: 'gray' }
+  private current_style: CanvasApplyStyle | null
+
+  constructor(props: RectangleProps) {
+    this.props = props
+    this.current_style = null
+  }
+
+  public is_intersection(point: PointProps): Boolean {
+    return rectangle_intersection(this.props, point)
+  }
+
+  public move(point: PointProps) {
+    this.props = Object.assign({}, this.props, point)
+  }
+
+  public draw(ctx: I2DCtx) {
+    const style = this.current_style ? this.current_style : this.defalt_style
+    draw_rectangle(ctx, this.props, style)
+  }
+
+  public set_style(stl: CanvasApplyStyle | null) {
+    this.current_style = stl
+  }
+
+  public get_props() {
+    return this.props
+  }
+}
+
+class Cache {
+  public get_children(): Rectangle[] {
+    const children = localStorage.getItem('children')
+    if (children) {
+      try {
+        const propsList: RectangleProps[] = JSON.parse(children)
+        const childList = propsList.map(props => {
+          return new Rectangle(props)
+        })
+        return childList
+      } catch (error) {
+        console.log('error ', error);
+        return []
+      }
+    } else {
+      return []
+    }
+  }
+  public cache_children() {
+    const children = JSON.stringify(
+      user_state.children.map(r => r.get_props()),
+    )
+    localStorage.setItem('children', children)
+  }
+}
+
+export const cache = new Cache()
+
+export const user_state = reactive<IUserState>({
+  border_box_size: 20,
+  border_box_padding: 30,
+  mouse_down_style: '#ff0000',
+  mouse_move_style: '#0000ff',
+  has_down: false,
+  down_point: null,
+  move_point: null,
+  active_rectangle: null,
+  children: [],
+  action: Action.Select,
+})
+user_state.children = cache.get_children()
+
+export const USER_TOOL_OPTS: IXXXOption<Action>[] = [
+  { label: 'Select', value: Action.Select },
+  { label: 'Rectangle', value: Action.Rectangle },
+]
+
+const config = {
+  center_line: true,
+  cache: true,
+}
 
 export class Scene {
   private ctx: I2DCtx
-  private children: DrawElement[]
-  private selected: DrawElement | null
-  private active_props: RectangleProps | null
-  private has_down: boolean
-  private down_point: PointProps | null
-  private move_point: PointProps | null
-  private width: number
-  private height: number
+  private canvas: HTMLCanvasElement
   private center: PointProps
 
-  constructor(ctx: I2DCtx) {
-    const { clientWidth, clientHeight } = document.documentElement
+  private props: RectangleProps | null = null
+  private box_list: PointProps[][] | null = null
+  private active_box: PointProps[] | null = null
 
-    const c: PointProps = { x: clientWidth / 2, y: clientHeight / 2 }
+  constructor(ctx: I2DCtx, canvas: HTMLCanvasElement) {
+    const {
+      clientWidth,
+      clientHeight,
+    } = document.documentElement
 
-    this.width = clientWidth
-    this.height = clientHeight
-    this.center = c
-    this.children = []
-    this.selected = null
+    const center: PointProps = {
+      x: clientWidth / 2,
+      y: clientHeight / 2,
+    }
     this.ctx = ctx
-    this.active_props = null
-    this.has_down = false
-    this.down_point = null
-    this.move_point = null
+    this.canvas =canvas
+    this.center = center
   }
 
-  public remove_active_child() {
-    if (this.selected) {
-      const idx = this.children.findIndex(c => c === this.selected)
-      if (idx !== -1) {
-        this.children.splice(idx, 1)
-      }
+  public on_mouse_down(point: PointProps) {
+    user_state.down_point = point
+    user_state.has_down = true
 
-      this.selected = null
-      current_scene_state.update_state({
-        shape_count: this.children.length,
-      })
-    }
-  }
+    switch (user_state.action) {
+      case Action.Select:
+        const box = this.get_box_by_point(point)
+        this.active_box = box
 
-  public on_pointer_down(p: PointProps) {
-    this.down_point = p
-    this.has_down = true
-
-    if (this.selected) {
-      this.selected = null
-    }
-
-    const selIdx = this.children.findIndex((rect) => {
-      return rect.check_intersect(p)
-    })
-
-    if (selIdx !== -1) {
-      const selectRectangle = this.children[selIdx]
-
-      if (selectRectangle.has_placement()) {
-        current_scene_state.update_state({ active_action: DrawAction.Reize })
-
-        this.active_props = selectRectangle.getProps()
-      } else {
-        current_scene_state.update_state({ active_action: DrawAction.Move })
-
-        this.active_props = selectRectangle.getProps()
-      }
-
-      this.selected = selectRectangle
-    } else {
-      if (current_scene_state.get_shape_type() !== ShapeType.Select) {
-        const element = DrawElement.get_instance(
-          current_scene_state.get_shape_type(),
-          { x: p.x, y: p.y, w: 0, h: 0 },
-          RECTANGLE_STYLE,
-        )
-  
-        this.selected = element
-        current_scene_state.update_state({ active_action: DrawAction.Create })
-      } else {
-
-      }
-    }
-  }
-
-  public on_move(p: PointProps) {
-    if (this.has_down) {
-      this.move_point = p
-    }
-  }
-
-  public on_pointer_up() {
-    this.has_down = false
-    this.down_point = null
-    this.move_point = null
-
-    switch (current_scene_state.get_action()) {
-      case DrawAction.Create:
-        if (this.selected) {
-          if (this.selected.is_valid()) {
-            this.children.push(this.selected)
-            current_scene_state.update_state({
-              shape_count: this.children.length,
-            })
-          } else {
-            //
+        let rect: Rectangle | null = null
+        for (const child of user_state.children) {
+          if (child.is_intersection(point)) {
+            rect = child as Rectangle
           }
+        }
 
-          this.selected = null
-          this.active_props = null
+        if (rect) {
+          user_state.active_rectangle = rect
+          this.props = rect.get_props()
+          this.box_list = this.create_box(this.props)
         }
         break
-      case DrawAction.Move:
-        this.active_props = null
-      case DrawAction.Reize:
-        if (this.selected) {
-          this.selected.on_blur()
-        }
-
-        this.active_props = null
+      case Action.Rectangle:
         break
     }
+  }
+
+  public on_mouse_move(point: PointProps) {
+    user_state.move_point = point
+  }
+
+  public on_mouse_up() {
+    switch (user_state.action) {
+      case Action.Select:
+        user_state.active_rectangle = null
+        break
+      case Action.Rectangle:
+        const rect = user_state.active_rectangle
+        if (rect) {
+          user_state.children.push(
+            rect
+          )
+          if (config.cache) {
+            cache.cache_children()
+          }
+          user_state.active_rectangle = null
+        }
+        break
+    }
+
+    user_state.has_down = false
+    user_state.down_point = null
   }
 
   public update() {
-    const { down_point, move_point } = this
-    if (!down_point || !move_point) return
+    const { down_point, move_point } = user_state
 
-    switch (current_scene_state.get_action()) {
-      case DrawAction.Create:
-        if (this.selected) {
-          const props = create_rectangle_props(down_point, move_point)
+    switch (user_state.action) {
+      case Action.Select:
+        if (move_point) {
+          let cursor = 'auto'
+          for (const child of user_state.children) {
+            if (child.is_intersection(move_point)) {
+              cursor = 'move'
+            }
+          }
+          const box = this.get_box_by_point(move_point)
+          if (box) {
+            cursor = 'nw-resize'
+          }
+          this.canvas.style.cursor = cursor
 
-          this.selected.update_props(props)
-          this.active_props = props
+          if (this.active_box) {
+            this.handle_resize()
+          } else {
+            this.handle_move()
+          }
         }
         break
-      case DrawAction.Move:
-        if (this.selected && this.active_props) {
-          const offsetX = down_point.x - this.active_props.x
-          const offsetY = down_point.y - this.active_props.y
+      case Action.Rectangle:
+        this.canvas.style.cursor = 'crosshair'
 
-          const offset_down: PointProps = { x: offsetX, y: offsetY }
-
-          this.selected.on_move(offset_down, move_point)
-        }
-        break
-      case DrawAction.Reize:
-        if (this.selected && this.active_props) {
-          this.selected.on_size(
-            this.active_props,
-            move_point,
+        if (down_point && move_point) {
+          user_state.active_rectangle = (
+            new Rectangle(
+              this.create_props(down_point, move_point),
+            )
           )
         }
         break
     }
   }
 
-  public draw(ctx: I2DCtx) {
-    if (current_scene_state.config.center_line_visible) {
-      this.renderGuideLines(ctx)
-    }
+  private handle_move() {
+    const {
+      down_point,
+      move_point,
+      active_rectangle,
+    } = user_state
+    if (!down_point || !move_point || !active_rectangle) return
 
-    for (const c of this.children) {
-      c.draw(this.ctx, c === this.selected)
-    }
+    if (this.props) {
+      const xOffset = move_point.x - down_point.x + this.props.x
+      const yOffset = move_point.y - down_point.y + this.props.y
 
-    if (this.selected) {
-      this.selected.draw(ctx)
-    }
-
-    if (current_scene_state.config.grid.visible) {
-      this.draw_grid(ctx)
-    }
-
-    if (current_scene_state.config.cross_area_visile) {
-      this.draw_cross(ctx)
+      active_rectangle.move({ x: xOffset, y: yOffset })
+      this.box_list = this.create_box(
+        active_rectangle.get_props()
+      )
+      if (config.cache) {
+        cache.cache_children()
+      }
     }
   }
 
-  private renderGuideLines(ctx: I2DCtx) {
-    const { width, height, center, down_point, move_point } = this
+  private handle_resize() {
+    const { active_rectangle } = user_state
+    if (!active_rectangle) return
 
-    const style1 = { strokeStyle: 'blue' }
-    draw_line(ctx, { x: 0, y: height / 2 }, { x: width, y: height / 2 }, style1)
-    draw_line(ctx, { x: width / 2, y: 0 }, { x: width / 2, y: height }, style1)
+    active_rectangle.set_style({ fillStyle: 'red' })
+  }
 
+  public draw() {
+    if (config.center_line) {
+      this.draw_mouse_center_line()
+    }
+    this.draw_mouse_link_line()
+    this.draw_child()
+    this.draw_children()
+
+    this.draw_size_box()
+  }
+
+  private draw_size_box() {
+    if (this.box_list) {
+      this.box_list.forEach(points => {
+        draw_points(this.ctx, points, { strokeStyle: 'blue' })
+      })
+    }
+  }
+
+  /**
+   * padding size sycn to draw
+   * @returns 
+   */
+  private create_box(props: RectangleProps) {
+    const { x, y, w, h } = props
+    const padding = user_state.border_box_padding
+
+    const top = y
+    const right = x + w
+    const bottom = h + y
+    const left = x
+
+    const points: PointProps[] = [
+      {
+        x: left - padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: top - padding,
+      },
+      {
+        x: right + padding,
+        y: bottom + padding,
+      },
+      {
+        x: left - padding,
+        y: bottom + padding,
+      },
+    ]
+
+    return points.map(this.create_size_box)
+  }
+
+  private create_size_box(point: PointProps) {
+    const { x, y } = point
+
+    const size = user_state.border_box_size
+
+    return [
+      { x: x - size, y: y - size },
+      { x: x + size, y: y - size },
+      { x: x + size, y: y + size },
+      { x: x - size, y: y + size },
+    ] as PointProps[]
+  }
+
+  private get_box_by_point(point: PointProps) {
+    if (this.box_list) {
+      for (const box of this.box_list) {
+        const props = this.get_props_by_points(box)
+        if (this.is_in_rect(point, props)) {
+          return box
+        }
+      }
+    }
+
+    return null
+  }
+
+  private get_props_by_points(points: PointProps[]): RectangleProps {
+    const [p1, p2, p3] = points
+
+    const w = Math.abs(p1.x - p2.x)
+    const h = Math.abs(p1.y - p3.y)
+
+    return {
+      x: p1.x,
+      y: p1.y,
+      w,
+      h,
+    }
+  }
+
+  private is_in_rect(point: PointProps, rect: RectangleProps): Boolean {
+    const { x, y, w, h } = rect
+
+    const inX = point.x >= x && point.x <= x + w
+    const inY = point.y >= y && point.y <= y + h
+
+    return inX && inY
+  }
+
+  private create_props(down: PointProps, move: PointProps) {
+    const w = down.x - move.x
+    const h = down.y - move.y
+    const props: RectangleProps = {
+      x: down.x < move.x ? down.x : move.x,
+      y: down.y < move.y ? down.y : move.y,
+      w: Math.abs(w),
+      h: Math.abs(h),
+    }
+    return props
+  }
+
+  private draw_children() {
+    for (const child of user_state.children) {
+      child.draw(this.ctx)
+    }
+  }
+
+  private draw_mouse_link_line() {
+    const { down_point, move_point } = user_state
     if (!down_point || !move_point) return
 
-    const style: CanvasApplyStyle = { strokeStyle: '#0040ff' }
-    draw_line(ctx, down_point, move_point, style)
-
-    draw_line(ctx, center, down_point, { strokeStyle: '#ff0000' })
-    draw_line(ctx, center, move_point, { strokeStyle: '#00b341' })
-  }
-
-  private draw_grid(ctx: I2DCtx) {
-    const { horiztal_size, vertical_size } = current_scene_state.config.grid
-
-    for (let i = 1; i < this.width / horiztal_size; i++) {
-      draw_line(
-        ctx,
-        { x: i * horiztal_size, y: 0 },
-        { x: i * horiztal_size, y: this.height },
-        { strokeStyle: '#00b341' },
-      )
-    }
-
-    for (let i = 1; i < this.height / vertical_size; i++) {
-      draw_line(
-        ctx,
-        { x: 0, y: i * vertical_size },
-        { x: this.width, y: i * vertical_size },
-        { strokeStyle: '#00b341' },
-      )
-    }
-  }
-
-  private draw_cross(ctx: I2DCtx) {
-    if (!this.down_point || !this.move_point) return
-
     draw_line(
-      ctx,
-      this.down_point,
-      this.move_point,
+      this.ctx,
+      down_point,
+      move_point,
       { strokeStyle: 'red' }
     )
+  }
+
+  private draw_child() {
+    if (user_state.action === Action.Rectangle) {
+      if (user_state.active_rectangle) {
+        user_state.active_rectangle.draw(this.ctx)
+      }
+    }
+  }
+
+  private draw_mouse_center_line() {
+    const { down_point, move_point } = user_state
+    if (down_point) {
+      draw_line(
+        this.ctx,
+        this.center,
+        down_point,
+        { strokeStyle: user_state.mouse_down_style },
+      )
+    }
+
+    if (move_point) {
+      draw_line(
+        this.ctx,
+        this.center,
+        move_point,
+        { strokeStyle: user_state.mouse_move_style },
+      )
+    }
   }
 }
