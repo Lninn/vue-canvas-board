@@ -364,7 +364,7 @@ export class Scene {
   }
 
   public update() {
-    const { down_point, move_point, active_rectangle } = scene_state
+    const { down_point, move_point } = scene_state
     if (!move_point) return
 
     switch (scene_state.action) {
@@ -377,108 +377,118 @@ export class Scene {
           const placement = border.get_current_placement()
 
           if (placement) {
-            if (this.props) {
-              let final_point: PointProps | null = null
-              let final_move: PointProps | null = null
-
-              switch (placement) {
-                case Placement.Top:
-                  final_point = {
-                    x: this.props.x + this.props.w,
-                    y: this.props.y + this.props.h,
-                  }
-
-                  final_move = {
-                    x: x_move_offset + this.props.x,
-                    y: y_move_offset + this.props.y,
-                  }
-                  break
-                case Placement.Right:
-                  final_point = {
-                    x: this.props.x,
-                    y: this.props.y + this.props.h,
-                  }
-
-                  final_move = {
-                    x: x_move_offset + this.props.x + this.props.w,
-                    y: y_move_offset + this.props.y,
-                  }
-                  break
-                case Placement.Bottom:
-                  final_point = {
-                    x: this.props.x,
-                    y: this.props.y,
-                  }
-
-                  final_move = {
-                    x: x_move_offset + this.props.x + this.props.w,
-                    y: y_move_offset + this.props.y + this.props.h,
-                  }
-                  break
-                case Placement.Left:
-                  final_point = {
-                    x: this.props.x + this.props.w,
-                    y: this.props.y,
-                  }
-
-                  final_move = {
-                    x: x_move_offset + this.props.x,
-                    y: y_move_offset + this.props.y + this.props.h,
-                  }
-                  break
-              }
-
-              const props = this.create_props(final_point, final_move)
-              if (active_rectangle) {
-                active_rectangle.resize(props)
-                border.update(active_rectangle.get_props())
-                if (config.cache) {
-                  cache.cache_children()
-                }
-              }
-            }
+            this.handle_resize(placement, x_move_offset, y_move_offset)
           } else {
-            if (move_point) {
-              if (this.props && down_point) {
-                const xOffset = move_point.x - down_point.x + this.props.x
-                const yOffset = move_point.y - down_point.y + this.props.y
-
-                if (active_rectangle) {
-                  active_rectangle.move({ x: xOffset, y: yOffset })
-                  border.update(active_rectangle.get_props())
-                  if (config.cache) {
-                    cache.cache_children()
-                  }
-                }
-              }
-            }
+            this.handle_move(x_move_offset, y_move_offset)
           }
         } else {
-          border.check(move_point)
-          scene_state.cursor = 'auto'
-
-          for (const child of scene_state.children) {
-            if (child.is_intersection(move_point)) {
-              scene_state.cursor = 'move'
-            }
-          }
-
-          const placement = border.get_current_placement()
-          if (active_rectangle) {
-            if (!!placement) {
-              active_rectangle.set_style({ fillStyle: '#0000001a' })
-              scene_state.cursor = Cursor_Map[placement]
-            } else {
-              active_rectangle.set_style(null)
-            }
-          }
-
-          this.canvas.style.cursor = scene_state.cursor
+          this.handle_move_style()
         }
         break
       case Action.Rectangle:
         this.handle_create()
         break
+    }
+  }
+
+  private handle_move_style() {
+    const { move_point, active_rectangle } = scene_state
+    if (!move_point) return
+
+    border.check(move_point)
+    scene_state.cursor = 'auto'
+
+    for (const child of scene_state.children) {
+      if (child.is_intersection(move_point)) {
+        scene_state.cursor = 'move'
+      }
+    }
+
+    const placement = border.get_current_placement()
+    if (active_rectangle) {
+      if (!!placement) {
+        active_rectangle.set_style({ fillStyle: '#0000001a' })
+        scene_state.cursor = Cursor_Map[placement]
+      } else {
+        active_rectangle.set_style(null)
+      }
+    }
+
+    this.canvas.style.cursor = scene_state.cursor
+  }
+
+  private handle_move(
+    x_move_offset: number,
+    y_move_offset: number,
+  ) {
+    if (this.props) {
+      const xOffset = x_move_offset + this.props.x
+      const yOffset = y_move_offset + this.props.y
+
+      if (scene_state.active_rectangle) {
+        scene_state.active_rectangle.move({ x: xOffset, y: yOffset })
+        border.update(scene_state.active_rectangle.get_props())
+      }
+    }
+  }
+
+  private handle_resize(
+    placement: Placement,
+    x_move_offset: number,
+    y_move_offset: number,
+  ) {
+    if (!this.props || !scene_state.active_rectangle) return
+
+    let final_move: PointProps | null = null
+
+    const top = this.props.y
+    const right = this.props.x + this.props.w
+    const bottom = this.props.y + this.props.h
+    const left = this.props.x
+
+    switch (placement) {
+      case Placement.Top:
+        final_move = {
+          x: left,
+          y: top,
+        }
+        break
+      case Placement.Right:
+        final_move = {
+          x: right,
+          y: top,
+        }
+        break
+      case Placement.Bottom:
+        final_move = {
+          x: right,
+          y: bottom,
+        }
+        break
+      case Placement.Left:
+        final_move = {
+          x: left,
+          y: bottom,
+        }
+        break
+    }
+
+    const is_right_or_bottom = placement === Placement.Right || placement === Placement.Bottom
+    const is_left_or_bottom = placement === Placement.Left || placement === Placement.Bottom
+    const props = this.create_props(
+      {
+        x: is_right_or_bottom ? left : right,
+        y: is_left_or_bottom ? top : bottom,
+      },
+      {
+        x: x_move_offset + final_move.x,
+        y: y_move_offset + final_move.y,
+      }
+    )
+
+    if (scene_state.active_rectangle) {
+      scene_state.active_rectangle.resize(props)
+      border.update(scene_state.active_rectangle.get_props())
     }
   }
 
