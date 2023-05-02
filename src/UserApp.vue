@@ -12,14 +12,16 @@
       <LabePair label="children" :desc="point_string(user_state.children)" />
       <Field type="color" label="down style" v-model="user_state.mouse_down_style" />
       <Field type="color" label="move style" v-model="user_state.mouse_move_style" />
+      <button @click="log">print info</button>
     </Panel>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, toRaw } from 'vue';
 import { OptionList, Panel, LabePair, Field } from './components'
 import { main } from './lib';
 import { USER_TOOL_OPTS, user_state } from './lib/user'
+
 const point_string = (payload: any) => {
   if (Array.isArray(payload)) return payload.length
 
@@ -28,6 +30,10 @@ const point_string = (payload: any) => {
   } else {
     return ''
   }
+}
+
+const log = () => {
+  console.log(toRaw(user_state.active_rectangle))
 }
 
 onMounted(() => {
