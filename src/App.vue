@@ -9,7 +9,7 @@
       <LabePair label="curcor status" :desc="point_string(scene_state.cursor)" />
       <LabePair label="down point" :desc="point_string(scene_state.down_point)" />
       <LabePair label="move point" :desc="point_string(scene_state.move_point)" />
-      <LabePair label="border" :desc="point_string(border.to_json())" />
+      <LabePair label="border" :desc="point_string(scene_state.border.to_json())" />
       <LabePair label="active rectangle" :desc="point_string(scene_state.active_rectangle)" />
       <LabePair label="children" :desc="point_string(scene_state.children)" />
       <Field type="color" label="down style" v-model="scene_state.mouse_down_style" />
@@ -22,7 +22,7 @@
 import { onMounted, toRaw } from 'vue';
 import { OptionList, Panel, LabePair, Field } from './components'
 import { main } from './lib';
-import { USER_TOOL_OPTS, scene_state, border } from './lib/scene'
+import { scene_state, USER_TOOL_OPTS } from './lib/app';
 
 const point_string = (payload: any) => {
   if (Array.isArray(payload)) return payload.length

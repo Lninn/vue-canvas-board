@@ -7,28 +7,6 @@ export interface PointProps {
 
 export type CanvasApplyStyle = Partial<Pick<I2DCtx, 'strokeStyle' | 'fillStyle'>>
 
-export const enum Placement {
-  TopLeft = 'TopLeft',
-  LeftTop = 'LeftTop',
-
-  Top = 'Top',
-
-  TopRight = 'TopRight',
-  RightTop = 'RightTop',
-
-  Right = 'Right',
-
-  BottomRight = 'BottomRight',
-  RightBottom = 'RightBottom',
-
-  Bottom = 'Bottom',
-
-  BottomLeft = 'BottomLeft',
-  LeftBottom = 'LeftBottom',
-
-  Left = 'Left',
-}
-
 export const enum DrawAction {
   Create = '建造模式',
   Move = '移动位置',
