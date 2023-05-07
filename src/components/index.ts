@@ -1,6 +1,0 @@
-export { default as Option } from './Option.vue'
-export type { IXXXOption } from './Option.vue'
-export { default as OptionList } from './OptionList.vue'
-export { default as Panel } from './Panel.vue'
-export { default as LabePair } from './LabePair.vue'
-export { default as Field } from './Field.vue'
